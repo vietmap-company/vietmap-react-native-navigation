@@ -1,0 +1,134 @@
+buildscript {
+  // Buildscript is evaluated before everything else so we can't use getExtOrDefault
+  def kotlin_version = rootProject.ext.has("kotlinVersion") ? rootProject.ext.get("kotlinVersion") : project.properties["VietMapNavigation_kotlinVersion"]
+
+  repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://www.jitpack.io' }
+  }
+
+  dependencies {
+    classpath "com.android.tools.build:gradle:8.1.2"
+    // noinspection DifferentKotlinGradleVersion
+    classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+  }
+}
+
+def isNewArchitectureEnabled() {
+  return rootProject.hasProperty("newArchEnabled") && rootProject.getProperty("newArchEnabled") == "true"
+}
+
+apply plugin: "com.android.library"
+apply plugin: "kotlin-android"
+
+
+def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+
+if (isNewArchitectureEnabled()) {
+  apply plugin: "com.facebook.react"
+}
+
+def getExtOrDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : project.properties["VietMapNavigation_" + name]
+}
+
+def getExtOrIntegerDefault(name) {
+  return rootProject.ext.has(name) ? rootProject.ext.get(name) : (project.properties["VietMapNavigation_" + name]).toInteger()
+}
+
+def jscFlavor = 'org.webkit:android-jsc:+'
+android {
+  namespace "vn.vietmap.vietmapnavigation"
+  compileSdkVersion getExtOrIntegerDefault("compileSdkVersion")
+
+  defaultConfig {
+    minSdkVersion getExtOrIntegerDefault("minSdkVersion")
+    targetSdkVersion getExtOrIntegerDefault("targetSdkVersion")
+    buildConfigField "boolean", "IS_NEW_ARCHITECTURE_ENABLED", isNewArchitectureEnabled().toString()
+  }
+  buildTypes {
+    release {
+      minifyEnabled false
+    }
+  }
+
+  lintOptions {
+    disable "GradleCompatible"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+
+  // // Add the block below if you're using Kotlin
+  // kotlinOptions {
+  //     jvmTarget = "1.8"
+  // } 
+
+  kotlinOptions {
+    jvmTarget = '17'
+  }
+
+   buildFeatures {
+      viewBinding true
+      buildConfig true
+  }
+
+}
+
+repositories {
+  mavenCentral()
+
+  google()
+}
+
+def kotlin_version = getExtOrDefault("kotlinVersion")
+
+dependencies {
+  // For < 0.71, this will be from the local maven repo
+  // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin
+  //noinspection GradleDynamicVersion
+
+  implementation("com.facebook.react:react-android")
+  implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
+  implementation("com.facebook.react:hermes-android")
+
+  // mapbox dependencies
+//  implementation "com.mapbox.navigation:android:2.17.8"
+
+  implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+  implementation 'androidx.cardview:cardview:1.0.0'
+
+  implementation 'androidx.appcompat:appcompat:1.6.1'
+  implementation 'com.google.android.material:material:1.7.0'
+  implementation "androidx.recyclerview:recyclerview:1.2.1"
+  implementation "androidx.lifecycle:lifecycle-extensions:2.2.0"
+  implementation "com.google.android.gms:play-services-location:21.0.1"
+  implementation "com.jakewharton:butterknife:10.2.3"
+  implementation 'androidx.core:core-ktx:1.7.0'
+  implementation 'com.github.vietmap-company:maps-sdk-android:2.2.2'
+  implementation 'com.github.vietmap-company:maps-sdk-navigation-ui-android:2.1.0'
+  implementation 'com.github.vietmap-company:maps-sdk-navigation-android:2.1.0'
+  implementation 'com.github.vietmap-company:vietmap-services-core:1.0.0'
+  implementation 'com.github.vietmap-company:vietmap-services-directions-models:1.0.1'
+  implementation 'com.github.vietmap-company:vietmap-services-turf-android:1.0.2'
+  implementation 'com.github.vietmap-company:vietmap-services-android:1.1.2'
+  implementation 'com.squareup.picasso:picasso:2.8'
+  implementation 'com.github.vietmap-company:vietmap-services-geojson-android:1.0.0'
+  implementation group: 'com.squareup.okhttp3', name: 'okhttp', version: '3.2.0'
+  implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+  implementation 'com.google.code.gson:gson:2.10.1'
+  implementation 'com.squareup.retrofit2:converter-gson:2.0.0-beta4'
+  implementation 'com.google.android.gms:play-services-location:21.2.0'
+  implementation 'androidx.coordinatorlayout:coordinatorlayout:1.2.0'
+}
+
+if (isNewArchitectureEnabled()) {
+  react {
+    jsRootDir = file("../src/")
+    libraryName = "VietMapNavigationView"
+    codegenJavaPackageName = "vn.vietmap.vietmapnavigation"
+  }
+}
