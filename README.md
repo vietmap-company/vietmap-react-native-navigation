@@ -1,23 +1,32 @@
-# React Native VietMap Navigation
 
-<img alt="React Native VietMap Navigation" src="./img/ios-nav.png?v=2" width="300" align="right" />
+[<img src="https://bizweb.dktcdn.net/100/415/690/themes/804206/assets/logo.png?1689561872933" height="40"/> </p>](https://vietmap.vn/maps-api)
+# VietMap React Native Navigation
 
-VietMap turn-by-turn routing based on real-time traffic for React Native. A navigation UI ready to drop into your React Native application. [Sample demo usage shown here for the  app in the screenshot](https://www.maps.vietmap.vn/) ➡️
+<img alt="VietMap React Native Navigation" src="./img/ios_nav.jpeg?v=2" width="300" align="right" />
+
+VietMap turn-by-turn routing based on real-time traffic for React Native. A navigation UI ready to drop into your React Native application. [Sample demo usage shown here for the  app in the screenshot](https://github.com/vietmap-company/vietmap-react-native-demo/blob/main/screen/Navigation/VietMapNavigation.tsx) ➡️
 
 ## Features
 
 - A full-fledged turn-by-turn navigation UI for mobile
-- VietNam driving, cycling, motorcycle and walking directions powered by [VietMap data](https://www.maps.vietmap.vn/) 
+- VietNam driving, cycling, motorcycle, and walking directions powered by [VietMap data](https://maps.vietmap.vn/)
  - Sounding turn instructions powered by [Google]( )
 
 ## Installation Requirements
-- You need an api key from VietMap to show map and start navigation.
-- VietMap navigation SDK only support React Native version 0.70 and above.
-If you're using lower version of React Native, please contact us for more information
+- You need an API key from VietMap to show the map, fetch the route, and start navigation.
+- VietMap navigation SDK only supported React Native version 0.70 and above.
+If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
 ## Installation
 
+Using `npm`
 ```
-npm install @vietmap/vietmap-react-native-navigation
+  npm install @vietmap/vietmap-react-native-navigation
+```
+
+Using `yarn`
+
+```
+  yarn add @vietmap/vietmap-react-native-navigation
 ```
 ---
 
@@ -39,7 +48,7 @@ Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** 
   <string>Your request location description</string>
 ```
 
-Add below code to `Podfile`
+Add the below code to `Podfile`
 
 ```ruby
     post_install do |installer|
@@ -50,7 +59,7 @@ Add below code to `Podfile`
     end
 ```
 Run `pod install` command
-```
+```bash
 cd ios && pod install
 ```
 
@@ -170,7 +179,7 @@ Zoom level while user in navigation
 
 #### `navigationTiltAnchor`
 
-Tilt level while user in navigation
+Tilt level while user in navigation, using for android only
 
 #### `style`
 
@@ -178,7 +187,7 @@ React native style for the `VietMapNavigation` react native component
 
 #### `  onRouteProgressChange?: (event: NavigationProgressData) => void;`
 
-This callback will response a `NavigationProgressData` model, which contain all data of current navigation progress
+This callback will response a `NavigationProgressData` model, which contain all data of current navigation progress. More details for `NavigationProgressData` description [here](./NavigationProgressData.md)
 
 #### `onCancelNavigation`
 
@@ -324,6 +333,33 @@ This function will call while user select a new route, cause VietMap SDK will fi
         </View>
 ```
 
+### Show the instruction guide to navigation screen
+- The instruction guide text response in `onRouteProgressChange` callback, you can get it by this code:
+```tsx
+  event?.nativeEvent?.data?.currentStepInstruction
+```
+### Turn direction guide
+- The instruction guide (turn direction) responds in two variables: `currentModifier` and `currentModifierType`. You can get it by this code:
+```tsx
+  let modifier = event?.nativeEvent?.data?.currentModifier
+  let type = event?.nativeEvent?.data?.currentModifierType
+```
+Replace all `space` with `_` and join two variables, you will get the turn direction guide (image and text direction) from the below list
+- You can get the [image direction guide](https://www.figma.com/file/rWyQ5TNtt6E5l8tPEE9Tkl/VietMap-navigation-symbol?type=design&node-id=0-1&t=HeZNcRIAprzQ60ih-0) and [text direction guide](./example/turn_direction_description.json )
+
+### Distance to the next turn
+```tsx
+  event?.nativeEvent?.distanceToNextTurn
+```
+### Distance and estimated time to the destination
+```tsx
+  /// The distance remaining to the destination, measured in meters 
+  event?.nativeEvent?.distanceRemaining
+  /// The time estimated to traveled the destination, measured in seconds
+  event?.nativeEvent?.durationRemaining
+  /// The distance user traveled from the origin point, measured in meters 
+  event?.nativeEvent?.distanceTraveled
+```
 ## Contributing
 
 Contributions are very welcome. Please check out the [contributing document](CONTRIBUTING.md).
@@ -331,3 +367,21 @@ Contributions are very welcome. Please check out the [contributing document](CON
 ## License
 
 The source code in this library is [BSD-3-Clause](LICENSE) licensed.
+
+
+
+</br>
+
+[<img src="https://bizweb.dktcdn.net/100/415/690/themes/804206/assets/logo.png?1689561872933" height="40"/> </p>](https://vietmap.vn/maps-api)
+Email us: [maps-api.support@vietmap.vn](mailto:maps-api.support@vietmap.vn)
+
+Vietmap API and price [here](https://vietmap.vn/maps-api)
+
+Contact for [support](https://vietmap.vn/lien-he)
+
+Vietmap API document [here](https://maps.vietmap.vn/docs/map-api/overview/)
+
+Have a bug to report? [Open an issue](https://github.com/vietmap-company/vietmap-react-native-navigation/issues).</br> If possible, include a full log and information that shows the issue.
+
+
+Have a feature request? [Open an issue](https://github.com/vietmap-company/vietmap-react-native-navigation/issues). </br>Tell us what the feature should do and why you want the feature.
