@@ -9,9 +9,9 @@ export class VietMapNavigationController {
     static startNavigation() {
         return VietMapNavigationModule.startNavigation();
     }
-    static cancelNavigation() {
-        return VietMapNavigationModule.cancelNavigation();
-    }
+    // static cancelNavigation() {
+    //     return VietMapNavigationModule.cancelNavigation();
+    // }
     ///driving-traffic
     ///cycling
     ///walking

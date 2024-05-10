@@ -11,7 +11,7 @@ import {SafeAreaView, useColorScheme} from 'react-native';
 import {Colors} from 'react-native/Libraries/NewAppScreen';
 import NavigationComponent from './NavigationComponent';
 import VMNavigation from './VMNavigationComponent';
-
+import VietMapNavigationScreen from './Navigation/VietMapNavigation'
 import {PermissionsAndroid} from 'react-native';
 
 const App = () => {
@@ -42,7 +42,7 @@ const App = () => {
 
   return (
     <SafeAreaView style={backgroundStyle}>
-      <VMNavigation 
+      <VietMapNavigationScreen 
       />
     </SafeAreaView>
   );
