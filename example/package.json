@@ -15,7 +15,9 @@
     "@types/react": "^18.2.79",
     "@types/react-dom": "^18.2.25",
     "react": "18.0.0",
-    "react-native": "0.71.6", 
+    "react-native": "0.71.6",
+    "react-native-elements": "^3.4.3",
+    "react-native-gesture-handler": "^2.16.2",
     "typescript": "^5.4.5"
   },
   "devDependencies": {

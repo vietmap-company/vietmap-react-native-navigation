@@ -314,8 +314,11 @@ PODS:
     - React-jsi (= 0.71.6)
     - React-logger (= 0.71.6)
     - React-perflogger (= 0.71.6)
+  - RNGestureHandler (2.16.2):
+    - RCT-Folly (= 2021.07.22.00)
+    - React-Core
   - VietMap (1.1.0)
-  - vietmap-react-native-navigation (0.0.2-pre-6):
+  - vietmap-react-native-navigation (1.0.0):
     - React-Core
     - VietMapCoreNavigation (= 2.1.5)
     - VietMapNavigation (= 2.1.7)
@@ -369,6 +372,7 @@ DEPENDENCIES:
   - React-RCTVibration (from `../node_modules/react-native/Libraries/Vibration`)
   - React-runtimeexecutor (from `../node_modules/react-native/ReactCommon/runtimeexecutor`)
   - ReactCommon/turbomodule/core (from `../node_modules/react-native/ReactCommon`)
+  - RNGestureHandler (from `../node_modules/react-native-gesture-handler`)
   - vietmap-react-native-navigation (from `../../`)
   - Yoga (from `../node_modules/react-native/ReactCommon/yoga`)
 
@@ -449,6 +453,8 @@ EXTERNAL SOURCES:
     :path: "../node_modules/react-native/ReactCommon/runtimeexecutor"
   ReactCommon:
     :path: "../node_modules/react-native/ReactCommon"
+  RNGestureHandler:
+    :path: "../node_modules/react-native-gesture-handler"
   vietmap-react-native-navigation:
     :path: "../../"
   Yoga:
@@ -488,8 +494,9 @@ SPEC CHECKSUMS:
   React-RCTVibration: 73d201599a64ea14b4e0b8f91b64970979fd92e6
   React-runtimeexecutor: 8692ac548bec648fa121980ccb4304afd136d584
   ReactCommon: e1067159764444e5db7c14e294d5cd79fb159c59
+  RNGestureHandler: d678f94a8f74de70ce3d9f5d23eb0f97b686e943
   VietMap: 84bdb4bfea1fdf1824ca491e3624c63508edc9dc
-  vietmap-react-native-navigation: 4e9b14edc1ef2425a3d8660161affa7509c7dd6e
+  vietmap-react-native-navigation: 734f150b13f695f6528a20031fdd7ac83fe260e6
   VietMapCoreNavigation: 8ecf7d083f486aba5fa012a4d00f33966c7a82e1
   VietMapDirections.swift: d622c98e381281b39f7dcac2b0445ee2f6e1690e
   VietMapNavigation: 4bd9a7a526d9edf215e8da12470ea9cde4161a2c

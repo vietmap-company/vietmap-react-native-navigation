@@ -19,13 +19,13 @@ If you're using a lower version of React Native, please [contact us](mailto:maps
 ## Installation
 
 Using `npm`
-```
+```bash
   npm install @vietmap/vietmap-react-native-navigation
 ```
 
 Using `yarn`
 
-```
+```bash
   yarn add @vietmap/vietmap-react-native-navigation
 ```
 ---
@@ -60,7 +60,7 @@ Add the below code to `Podfile`
 ```
 Run `pod install` command
 ```bash
-cd ios && pod install
+cd ios && pod install && cd ..
 ```
 
 ## Usage
@@ -260,7 +260,6 @@ This function will call while user select a new route, cause VietMap SDK will fi
 
 ### Add a controller to control the navigation progress
 ```tsx
-
         <View style={{ flex: 1, flexDirection: 'row' }}>
           <View key={'navigation'} style={{ flex: 1 }}>
             <Pressable
@@ -368,8 +367,7 @@ Contributions are very welcome. Please check out the [contributing document](CON
 
 The source code in this library is [BSD-3-Clause](LICENSE) licensed.
 
-
-
+</br>
 </br>
 
 [<img src="https://bizweb.dktcdn.net/100/415/690/themes/804206/assets/logo.png?1689561872933" height="40"/> </p>](https://vietmap.vn/maps-api)
