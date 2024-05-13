@@ -4,7 +4,7 @@
 
 <img alt="VietMap React Native Navigation" src="./img/ios_nav.jpeg?v=2" width="300" align="right" />
 
-VietMap turn-by-turn routing based on real-time traffic for React Native. A navigation UI ready to drop into your React Native application. [Sample demo usage shown here for the  app in the screenshot](https://github.com/vietmap-company/vietmap-react-native-demo/blob/main/screen/Navigation/VietMapNavigation.tsx) ➡️
+VietMap turn-by-turn routing based on real-time traffic for React Native. A navigation UI ready to drop into your React Native application. [Sample demo usage shown here for the  app in the screenshot](https://github.com/vietmap-company/vietmap-react-native-demo/tree/main/screen/Navigation) ➡️
 
 ## Features
 
@@ -49,24 +49,27 @@ Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** 
 ```
 
 Add the below code to `Podfile`
-
 ```ruby
-    post_install do |installer|
-      #...............
-      # Add this line
-      system("cp -R Pods/Headers/Public/VietMapDirections.swift/VietMapDirections.h Pods/Headers/Public/VietMapDirections")
-      #...............
-    end
+  system("cp -R Pods/Headers/Public/VietMapDirections.swift/VietMapDirections.h Pods/Headers/Public/VietMapDirections")
+```
+Like below code:
+```ruby
+  post_install do |installer|
+    #...............
+    # Add the line here
+    system("cp -R Pods/Headers/Public/VietMapDirections.swift/VietMapDirections.h Pods/Headers/Public/VietMapDirections")
+    #...............
+  end
 ```
 Run `pod install` command
 ```bash
-cd ios && pod install && cd ..
+  cd ios && pod install && cd ..
 ```
 
 ## Usage
 ### Show navigation view
 ```tsx
-const VMNavigation: React.FC<void> = () => {
+const VietMapNavigationScreen: React.FC<void> = () => {
   return (
     <View style={styles.container}>
       <View style={styles.mapContainer}>
@@ -102,21 +105,21 @@ const VMNavigation: React.FC<void> = () => {
             alert('You have reached your destination');
           }}
           onRouteBuilt={(event) => {
-            console.log('onRouteBuilt', event.nativeEvent.data.duration);
+            console.log('onRouteBuilt', event.nativeEvent.data);
           }}
           onMapClick={(event) => {
-            console.log('onMapClick', event.nativeEvent.data.latitude);
+            console.log('onMapClick', event.nativeEvent.data);
 
             VietMapNavigationController.buildRoute(
               [
                 [10.759156, 106.675913],
-                [event.nativeEvent.data.latitude, event.nativeEvent.data.longitude]
+                [event.nativeEvent.data.latitude, event.nativeEvent.data]
               ],
               'motorcycle'
             )
           }}
           onMapLongClick={(event) => {
-            console.log('onMapLongClick', event.nativeEvent.data.latitude);
+            console.log('onMapLongClick', event.nativeEvent.data);
           }}
           onCancelNavigation={() => {
             alert('Cancelled navigation event');
@@ -152,7 +155,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default VMNavigation;
+export default VietMapNavigationScreen;
 
 ```
 
@@ -164,8 +167,14 @@ Api key VietMap provided for user/customer
 
 #### `initialLatLngZoom` (**Required**)
 
-Array that contains the longitude and latitude for the initial zoom.<br>
-`[$longitude, $latitude, $zoom]`
+Object `InitialLatLngZoom` that contains the longitude and latitude for the initial zoom.<br>
+```tsx
+  {
+    lat: number;  // -90 to 90 degrees
+    long: number; // -180 to 180 degrees
+    zoom: number; // 0 to 21
+  }
+```
 
 **SDK will auto detect current location of user and move the map to this location, the zoom level will match with provided**
  
@@ -176,18 +185,14 @@ Boolean that controls route simulation. Set this as `true` to auto navigate whic
 #### `navigationZoomLevel`
 
 Zoom level while user in navigation
-
-#### `navigationTiltAnchor`
-
-Tilt level while user in navigation, using for android only
-
+ 
 #### `style`
 
 React native style for the `VietMapNavigation` react native component
 
-#### `  onRouteProgressChange?: (event: NavigationProgressData) => void;`
+#### `onRouteProgressChange?: (event: NavigationProgressData) => void;`
 
-This callback will response a `NavigationProgressData` model, which contain all data of current navigation progress. More details for `NavigationProgressData` description [here](./NavigationProgressData.md)
+This callback will response a `NavigationProgressData` model, which contain all data of current navigation progress. More details for `NavigationProgressData` model description [here](./NavigationProgressData.md)
 
 #### `onCancelNavigation`
 
