@@ -1,7 +1,7 @@
 {
   "name": "@vietmap/vietmap-react-native-navigation",
   "title": "VietMap React Native turn by turn Navigation",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "VietMap turn-by-turn navigation for React Native.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
