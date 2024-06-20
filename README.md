@@ -20,13 +20,13 @@ If you're using a lower version of React Native, please [contact us](mailto:maps
 
 Using `npm`
 ```bash
-  npm install @vietmap/vietmap-react-native-navigation
+  npm install @vietmap/vietmap-react-native-navigation-070
 ```
 
 Using `yarn`
 
 ```bash
-  yarn add @vietmap/vietmap-react-native-navigation
+  yarn add @vietmap/vietmap-react-native-navigation-070
 ```
 ---
 

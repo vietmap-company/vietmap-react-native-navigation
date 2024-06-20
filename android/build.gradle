@@ -91,10 +91,12 @@ dependencies {
   // For > 0.71, this will be replaced by `com.facebook.react:react-android:$version` by react gradle plugin
   //noinspection GradleDynamicVersion
 
-  implementation("com.facebook.react:react-android")
+  // implementation("com.facebook.react:react-android")
   implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlin_version"
-  implementation("com.facebook.react:hermes-android")
+  // implementation("com.facebook.react:hermes-android")
 
+  implementation "com.facebook.react:react-native"
+  implementation "com.facebook.fresco:fresco:2.5.0"
   // mapbox dependencies
 //  implementation "com.mapbox.navigation:android:2.17.8"
 
