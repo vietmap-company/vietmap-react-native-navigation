@@ -46,8 +46,8 @@ Pod::Spec.new do |s|
   s.requires_arc = true
 
   s.dependency "React-Core"
-  s.dependency 'VietMapNavigation', '2.1.7'
-  s.dependency 'VietMapCoreNavigation', '2.1.5'
+  s.dependency 'VietMapNavigation', '3.1.3'
+  s.dependency 'VietMapCoreNavigation', '3.1.0'
   s.platform = :ios, '12.0'
   s.swift_version = '5.0'
 end

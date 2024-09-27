@@ -26,7 +26,7 @@ extension UIView {
     }
 }
 
-@objcMembers class VietMapNavigationView: UIView, NavigationViewControllerDelegate, MGLMapViewDelegate {
+@objcMembers class VietMapNavigationView: UIView, NavigationViewControllerDelegate, MLNMapViewDelegate {
     static var shared = VietMapNavigationView()
     var navigationMapView: NavigationMapView? {
         didSet {
@@ -193,8 +193,8 @@ extension UIView {
         guard let location = notification.userInfo?[RouteControllerNotificationUserInfoKey.locationKey] as? CLLocation else { return }
         guard let rawLocation = notification.userInfo?[RouteControllerNotificationUserInfoKey.rawLocationKey] as? CLLocation else { return }
         // Update the user puck
-        let camera = MGLMapCamera(lookingAtCenter: location.coordinate, altitude: altitudeForZoomLevel(zoomLevel: navigationZoomLevel), pitch: 60, heading: location.course)
-        navigationMapView.updateCourseTracking(location: location, camera: camera, animated: true)
+        let camera = MLNMapCamera(lookingAtCenter: location.coordinate, altitude: altitudeForZoomLevel(zoomLevel: navigationZoomLevel), pitch: 60, heading: location.course)
+        navigationMapView.updateCourseTracking(location: location, camera: camera, animated: false)
         sendEvent(event: onRouteProgressChange, data: encodeRouteProgressChange(routeProgress: routeProgress,location:location,rawLocation:rawLocation))
     }
     
@@ -259,7 +259,7 @@ extension UIView {
             let initialCoordinate = CLLocationCoordinate2D(latitude: initLat, longitude: initLong)
             let zoomLevel: Double = initialLatLngZoom["zoom"] as? Double ?? 6
             
-            mapView.setCenter(initialCoordinate, zoomLevel: zoomLevel, animated: true)
+            mapView.setCenter(initialCoordinate, zoomLevel: zoomLevel, animated: false)
         }
     }
     

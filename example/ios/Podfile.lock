@@ -317,19 +317,19 @@ PODS:
   - RNGestureHandler (2.16.2):
     - RCT-Folly (= 2021.07.22.00)
     - React-Core
-  - VietMap (1.1.0)
-  - vietmap-react-native-navigation (1.0.0):
+  - VietMap (2.0.0)
+  - vietmap-react-native-navigation (1.0.2):
     - React-Core
-    - VietMapCoreNavigation (= 2.1.5)
-    - VietMapNavigation (= 2.1.7)
-  - VietMapCoreNavigation (2.1.5):
+    - VietMapCoreNavigation (= 3.1.0)
+    - VietMapNavigation (= 3.1.3)
+  - VietMapCoreNavigation (3.1.0):
     - VietMapDirections.swift (~> 2.0.1)
     - VietMapTurf (~> 1.0.2)
   - VietMapDirections.swift (2.0.1):
     - VietMapPolyline (~> 1.0.4)
-  - VietMapNavigation (2.1.7):
-    - VietMap (~> 1.1.0)
-    - VietMapCoreNavigation (= 2.1.5)
+  - VietMapNavigation (3.1.3):
+    - VietMap (~> 2.0.0)
+    - VietMapCoreNavigation (= 3.1.0)
     - VietMapSolar (~> 1.0.3)
     - VietMapSpeech (~> 2.0.1)
   - VietMapPolyline (1.0.6)
@@ -495,11 +495,11 @@ SPEC CHECKSUMS:
   React-runtimeexecutor: 8692ac548bec648fa121980ccb4304afd136d584
   ReactCommon: e1067159764444e5db7c14e294d5cd79fb159c59
   RNGestureHandler: d678f94a8f74de70ce3d9f5d23eb0f97b686e943
-  VietMap: 84bdb4bfea1fdf1824ca491e3624c63508edc9dc
-  vietmap-react-native-navigation: 734f150b13f695f6528a20031fdd7ac83fe260e6
-  VietMapCoreNavigation: 8ecf7d083f486aba5fa012a4d00f33966c7a82e1
+  VietMap: 1fc4a1e27896a19bc8b8a62e2227b1e0116a698d
+  vietmap-react-native-navigation: 8738cabed6e3039cb87d9df976ff022d54a8189b
+  VietMapCoreNavigation: a5a6e2bed913c321abafca37286647b5b1dc52ed
   VietMapDirections.swift: d622c98e381281b39f7dcac2b0445ee2f6e1690e
-  VietMapNavigation: 4bd9a7a526d9edf215e8da12470ea9cde4161a2c
+  VietMapNavigation: 9b9322418f72d279c85640ef5353d20235cbbdc4
   VietMapPolyline: e599c6d0a0a4b3672957881e2f666ba2141a4e83
   VietMapSolar: ef412e72efb00b700f2223e701cae66b446bf17b
   VietMapSpeech: fe5bd0c2ed2757aa7ac59337d74480e25e5a36ed
