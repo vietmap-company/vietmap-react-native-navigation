@@ -72,8 +72,7 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
         if (sources == null) {
             view.setApiKey("")
             return
-        }
-        print("Set api key "+sources);
+        } 
         view.setApiKey(sources)
     }
 

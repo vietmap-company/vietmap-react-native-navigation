@@ -35,7 +35,7 @@ class VietMapNavigationModule: NSObject {
     
     @objc
     func cancelNavigation() {
-        print("cancelNavigation hereeeeeee")
+        // print("cancelNavigation hereeeeeee")
     }
     
     @objc

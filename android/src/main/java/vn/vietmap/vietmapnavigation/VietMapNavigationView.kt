@@ -29,6 +29,7 @@ import vn.vietmap.model.VietMapRouteProgressEvent
 import vn.vietmap.utilities.JSONConverter
 import com.mapbox.api.directions.v5.models.BannerInstructions
 import com.mapbox.api.directions.v5.models.DirectionsResponse
+import com.mapbox.api.directions.v5.models.RouteOptions
 import com.mapbox.turf.TurfMisc
 import org.json.JSONObject
 import retrofit2.Call
@@ -64,6 +65,8 @@ import vn.vietmap.services.android.navigation.v5.routeprogress.ProgressChangeLis
 import vn.vietmap.services.android.navigation.v5.routeprogress.RouteProgress
 import vn.vietmap.services.android.navigation.v5.snap.SnapToRoute
 import vn.vietmap.services.android.navigation.v5.utils.RouteUtils
+import vn.vietmap.utilities.VMNavigationRoute
+import vn.vietmap.utilities.VMRouteOptions
 import vn.vietmap.vietmapsdk.Vietmap
 import vn.vietmap.vietmapsdk.camera.CameraPosition
 import vn.vietmap.vietmapsdk.camera.CameraUpdate
@@ -190,8 +193,9 @@ class VietMapNavigationView(
         var bannerInstructionsEnabled = true
         var longPressDestinationEnabled = true
         var animateBuildRoute = true
-        var originPoint: Point? = null
-        var destinationPoint: Point? = null
+//        var originPoint: Point? = null
+//        var destinationPoint: Point? = null
+        var listNavigationPoints: MutableList<Point> = mutableListOf()
         var isRunning: Boolean = false
     }
 
@@ -268,19 +272,28 @@ class VietMapNavigationView(
     private fun startRoute(points: ReadableArray, profile: String) {
         // Create a list of coordinates that includes origin, destination, and waypoints
         val coordinatesList = mutableListOf<Point>()
-        coordinatesList.add(
-            Point.fromLngLat(
-                points.getMap(0).getDouble("long"),
-                points.getMap(0).getDouble("lat")
+//        coordinatesList.add(
+//            Point.fromLngLat(
+//                points.getMap(0).getDouble("long"),
+//                points.getMap(0).getDouble("lat")
+//            )
+//        )
+//        coordinatesList.add(
+//            Point.fromLngLat(
+//                points.getMap(1).getDouble("long"),
+//                points.getMap(1).getDouble("lat")
+//            )
+//        )
+        for (i in 0 until points.size()) {
+            coordinatesList.add(
+                Point.fromLngLat(
+                    points.getMap(i).getDouble("long"),
+                    points.getMap(i).getDouble("lat")
+                )
             )
-        )
-        coordinatesList.add(
-            Point.fromLngLat(
-                points.getMap(1).getDouble("long"),
-                points.getMap(1).getDouble("lat")
-            )
-        )
+        }
 
+        listNavigationPoints = coordinatesList
         findRoute(coordinatesList, profile)
     }
 
@@ -296,25 +309,47 @@ class VietMapNavigationView(
 
     private fun findRoute(coordinates: List<Point>, profile: String?) {
         try {
-            val br = bearing
+            val br = bearing 
 
+            val routeOptions: RouteOptions = RouteOptions.builder()
+                .coordinates(coordinates)
+                .bearings(br.toString())
+                .alternatives(true)
+
+                .profile(profile ?: "driving-traffic")
+                .baseUrl("")
+                .accessToken(apikey ?: "")
+                .requestUuid("")
+                .user("")
+                .build()
             sendEvent(VietMapEvents.ROUTE_BUILDING)
-            val builder = NavigationRoute.builder(context)
+            val build = NavigationRoute.builder(context)
                 .apikey(apikey ?: "")
-                .origin(coordinates.first(), 60.0, br).destination(coordinates.last())
+                .routeOptions(routeOptions)
+
+                .origin(coordinates.first(), 60.0, br)
+
+                .destination(coordinates.last())
                 .alternatives(true)
                 ///driving-traffic
                 ///cycling
                 ///walking
                 ///motorcycle
-                .profile(profile ?: "driving-traffic").build()
+                .profile(profile ?: "driving-traffic")
+
+            for (i in 1 until coordinates.size - 1) {
+                build.addWaypoint(coordinates[i])
+            }
+
+            val builder = build.build()
+
+            listNavigationPoints.removeFirst()
             builder.getRoute(object : Callback<DirectionsResponse> {
                 override fun onResponse(
                     call: Call<DirectionsResponse?>, response: Response<DirectionsResponse?>
                 ) {
                     if (response.body() == null || response.body()!!.routes().size < 1) {
-                        sendEvent(VietMapEvents.ROUTE_BUILD_FAILED)
-                        // TODO: handle send here
+                        sendEvent(VietMapEvents.ROUTE_BUILD_FAILED) 
                         return
                     }
                     directionsRoutes = response.body()!!.routes()
@@ -323,8 +358,7 @@ class VietMapNavigationView(
                     } else {
                         directionsRoutes!![primaryRouteIndex]
                     }
-                    print("------------------------------------------------")
-                    Log.d("CurrentRoute", currentRoute?.toJson().toString())
+                    
                     sendEvent(
                         VietMapEvents.ROUTE_BUILT,
                         currentRoute?.toJson()?.let { JSONObject(it) })
@@ -361,11 +395,11 @@ class VietMapNavigationView(
                     sendEvent(
                         VietMapEvents.ROUTE_BUILD_FAILED
                     )
+ 
                     //TODO: Handle send event here
                 }
             })
-        } catch (ex: Exception) {
-
+        } catch (ex: Exception) { 
             sendErrorToReact(ex.toString())
         }
 
@@ -565,9 +599,7 @@ class VietMapNavigationView(
     }
 
     private fun moveCamera(location: LatLng, bearing: Float?, zoomLevel: Double = navigationZoomLevel) {
-        println("Zoom Level 1-----------------$navigationZoomLevel")
-        println("Zoom Level 2-----------------$zoomLevel")
-
+ 
         val cameraPosition = CameraPosition.Builder().target(location).zoom(zoomLevel).tilt(tilt)
 
         if (bearing != null) {
@@ -591,26 +623,42 @@ class VietMapNavigationView(
 //                VietMapEvents.ROUTE_BUILD_FAILED,
 //            )
 //            return
-//        }
-
+//        } 
         sendEvent(VietMapEvents.ROUTE_BUILDING)
         val br = bearing ?: 0.0
-        val builder = NavigationRoute.builder(context)
+        val routeOptions = RouteOptions.builder()
+            .coordinates(listNavigationPoints)
+            .bearings(br.toString())
+            .alternatives(true)
+            .baseUrl("")
+            .accessToken(apikey ?: "")
+            .requestUuid("")
+            .profile(profile)
+            .user("")
+            .build()
+        val build = NavigationRoute.builder(context)
             .apikey(apikey ?: "")
-            .origin(originPoint!!, 60.0, br.toDouble()).destination(destinationPoint!!)
+            .routeOptions(routeOptions)
+            .origin(listNavigationPoints.first(), 60.0, br.toDouble())
+            .destination(listNavigationPoints.last())
             .alternatives(true)
             ///driving-traffic
             ///cycling
             ///walking
             ///motorcycle
-            .profile(profile).build()
-        builder.getRoute(object : Callback<DirectionsResponse> {
+//            .profile(profile)
+
+        for (i in 1 until listNavigationPoints.size - 1) {
+            build.addWaypoint(listNavigationPoints[i])
+        }
+        val builder = build.build()
+        listNavigationPoints.removeFirst()
+        builder.getRoute(object : Callback<DirectionsResponse?> {
             override fun onResponse(
                 call: Call<DirectionsResponse?>, response: Response<DirectionsResponse?>
             ) {
                 if (response.body() == null || response.body()!!.routes().size < 1) {
-                    sendEvent(VietMapEvents.ROUTE_BUILD_FAILED)
-                    // TODO: handle send here
+                    sendEvent(VietMapEvents.ROUTE_BUILD_FAILED)  
                     return
                 }
                 directionsRoutes = response.body()!!.routes()
@@ -619,9 +667,7 @@ class VietMapNavigationView(
                 } else {
                     directionsRoutes!![primaryRouteIndex]
                 }
-
-                print("------------------------------------------------")
-                print(currentRoute?.toJson())
+ 
                 sendEvent(VietMapEvents.ROUTE_BUILT, currentRoute?.toJson()?.let { JSONObject(it) })
 
                 // Draw the route on the map
@@ -645,10 +691,7 @@ class VietMapNavigationView(
                 val routePoints: List<Point> =
                     currentRoute?.routeOptions()?.coordinates() as List<Point>
                 animateVietmapGLForRouteOverview(padding, routePoints)
-                //Start Navigation again from new Point, if it was already in Progress
-                println(isStartNavigation)
-                println(isNavigationInProgress)
-                println("========================-----------------------------")
+                //Start Navigation again from new Point, if it was already in Progress 
                 if (isNavigationInProgress || isStartNavigation) {
                     startNavigation()
                 }
@@ -658,16 +701,13 @@ class VietMapNavigationView(
                 isBuildingRoute = false
                 sendEvent(
                     VietMapEvents.ROUTE_BUILD_FAILED
-                )
-                //TODO: Handle send event here
+                ) 
             }
         })
     }
 
     fun buildRoute(data: Any?) {
-        if (data != null) {
-            Log.d("points", (data as Map<*, *>)["points"].toString())
-            Log.d("vehicle", data["vehicle"].toString())
+        if (data != null) { 
             profile = data["vehicle"].toString()
             val points = data["points"] as ReadableArray
 
@@ -675,16 +715,15 @@ class VietMapNavigationView(
                 points,
                 data["vehicle"] as String
             )
-            originPoint =
-                Point.fromLngLat(points.getMap(0).getDouble("long"), points.getMap(0).getDouble("lat"))
-            destinationPoint =
-                Point.fromLngLat(points.getMap(1).getDouble("long"), points.getMap(1).getDouble("lat"))
+//            originPoint =
+//                Point.fromLngLat(points.getMap(0).getDouble("long"), points.getMap(0).getDouble("lat"))
+//            destinationPoint =
+//                Point.fromLngLat(points.getMap(1).getDouble("long"), points.getMap(1).getDouble("lat"))
         }
 
     }
 
-    fun demoVMFunc() {
-        Log.d("VMDemo", "Singleton Func called------------------")
+    fun demoVMFunc() { 
         startNavigation()
     }
 
@@ -861,8 +900,11 @@ class VietMapNavigationView(
 
             }
 
-            originPoint = offRoutePoint
+//            originPoint = offRoutePoint
+
+            listNavigationPoints.add(0, offRoutePoint!!)
             isNavigationInProgress = true
+
             fetchRouteWithBearing(false, profile)
         }
     }
@@ -958,7 +1000,7 @@ class VietMapNavigationView(
             playVoiceAnnouncement(milestone)
         }
         if (routeUtils.isArrivalEvent(routeProgress, milestone) && isNavigationInProgress) {
-            Log.d("Arrival ", "User arrival")
+ 
             sendEvent(VietMapEvents.ON_ARRIVAL)
 
             finishNavigation()
@@ -1218,7 +1260,7 @@ class VietMapNavigationView(
     }
 
     private fun sendEvent(eventName: VietMapEvents, data: JSONObject? = null) {
-        Log.d("EventName", eventName.value)
+ 
         val writableMap = Arguments.createMap()
         writableMap.putString("eventType", eventName.value)
         if (data != null) {

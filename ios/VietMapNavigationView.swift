@@ -315,10 +315,16 @@ extension VietMapNavigationView : UIGestureRecognizerDelegate {
     
     // MARK: - requestRoute
     func requestRoute(location: NSArray, profile: NSString) {
-        guard location.count == 2 else { return }
-        let originWaypoint = Waypoint(coordinate: CLLocationCoordinate2D(latitude: (location[0] as! NSArray)[0] as! CLLocationDegrees, longitude: (location[0] as! NSArray)[1] as! CLLocationDegrees))
-        let destinationWaypoint = Waypoint(coordinate: CLLocationCoordinate2D(latitude: (location[1] as! NSArray)[0] as! CLLocationDegrees, longitude: (location[1] as! NSArray)[1] as! CLLocationDegrees))
+        guard location.count >= 2 else { return }
+        // let originWaypoint = Waypoint(coordinate: CLLocationCoordinate2D(latitude: (location[0] as! NSArray)[0] as! CLLocationDegrees, longitude: (location[0] as! NSArray)[1] as! CLLocationDegrees))
+        // let destinationWaypoint = Waypoint(coordinate: CLLocationCoordinate2D(latitude: (location[1] as! NSArray)[0] as! CLLocationDegrees, longitude: (location[1] as! NSArray)[1] as! CLLocationDegrees))
+        /// Convert location to list of waypoints
         
+        let waypoints = location.map { (item) -> Waypoint in
+            let lat = (item as! NSArray)[0] as! Double
+            let long = (item as! NSArray)[1] as! Double
+            return Waypoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
+        }
         embedding = true
         var mode: MBDirectionsProfileIdentifier = .automobileAvoidingTraffic
         
@@ -338,7 +344,7 @@ extension VietMapNavigationView : UIGestureRecognizerDelegate {
         {
             mode = .init("mapbox/motorcycle")
         }
-        let routeOptions = NavigationRouteOptions(waypoints: [originWaypoint, destinationWaypoint], profileIdentifier: mode)
+        let routeOptions = NavigationRouteOptions(waypoints: waypoints , profileIdentifier: mode)
         routeOptions.shapeFormat = .polyline6
         routeOptions.locale = Locale(identifier: "vi")
         requestRoute(with: routeOptions, success: defaultSuccess, failure: defaultFailure)

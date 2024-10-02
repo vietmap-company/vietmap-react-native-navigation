@@ -319,7 +319,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             console.log('onMapClick', event.nativeEvent.data.latitude);
           }}
           onMapLongClick={(event) => {
-            console.log('onMapLongClick', event.nativeEvent.data.latitude);
+            console.log('onMapLongClickzz', event.nativeEvent.data.latitude);
             VietMapNavigationController.buildRoute(
               [
                 {
@@ -329,6 +329,17 @@ const VietMapNavigationScreen: React.FC<void> = () => {
                 {
                   lat: event.nativeEvent.data.latitude,
                   long: event.nativeEvent.data.longitude,
+                },
+                {
+                  lat: 10.382297,
+                  long: 106.103986,
+                },
+                {
+                  lat: 10.770612,
+                  long: 106.714432,
+                },
+                {
+                  lat: 11.040438,long:  106.703667
                 },
               ],
               'motorcycle'

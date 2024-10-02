@@ -80,9 +80,9 @@ const Navigation = props => {
           userOffRoute={event => {
             console.log('userOffRoute', event.nativeEvent);
           }}
-          onArrival={event => {
-            console.log('onArrival', event.nativeEvent);
-          }}
+          // onArrival={event => {
+          //   console.log('onArrival', event.nativeEvent);
+          // }}
           onNewRouteSelected={event => {
             console.log('onNewRouteSelected', event.nativeEvent);
           }}
@@ -100,6 +100,8 @@ const Navigation = props => {
                   dataJson.latitude,
                   dataJson.longitude,
                 ],
+                [10.770612, 106.714432],
+                [10.382297, 107.103986]
               ],
               'motorcycle',
             );

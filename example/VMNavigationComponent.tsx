@@ -207,7 +207,14 @@ const VMNavigation: React.FC<void> = () => {
                 {
                   lat: event.nativeEvent.data.latitude,
                   long: event.nativeEvent.data.longitude,
+                }, {
+                  lat: 10.382297,
+                  long: 106.103986,
                 },
+                {
+                  lat: 10.770612,
+                  long: 106.714432,
+                }
               ],
               'motorcycle'
             )
@@ -238,7 +245,14 @@ const VMNavigation: React.FC<void> = () => {
                     {
                       lat: 10.762429,
                       long: 106.678900,
+                    }, {
+                      lat: 10.382297,
+                      long: 106.103986,
                     },
+                    {
+                      lat: 10.770612,
+                      long: 106.714432,
+                    }
                   ],
                   'motorcycle'
                 )

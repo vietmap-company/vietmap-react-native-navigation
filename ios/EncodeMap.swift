@@ -51,6 +51,7 @@ func convertLeg(legs: [VietMapDirections.RouteLeg]) -> Array<Any> {
             "steps": convertSteps(steps: item.steps)
         ]
         result.append(itemResult)
+        
     }
 
     return result
@@ -162,17 +163,27 @@ func convertComponent(components: [VietMapDirections.ComponentRepresentable]) ->
 }
 
 public func encodeBuildRoute(location: NSArray) -> NSArray {
-    let result: NSArray = [
-        [
-            (location[0] as! NSDictionary)["lat"]!,
-            (location[0] as! NSDictionary)["long"]!,
-        ],
-        [
-            (location[1] as! NSDictionary)["lat"]!,
-            (location[1] as! NSDictionary)["long"]!,
-        ]
+    // let result: NSArray = [
+    //     [
+    //         (location[0] as! NSDictionary)["lat"]!,
+    //         (location[0] as! NSDictionary)["long"]!,
+    //     ],
+    //     [
+    //         (location[1] as! NSDictionary)["lat"]!,
+    //         (location[1] as! NSDictionary)["long"]!,
+    //     ]
         
-    ]
+    // ]
+    /// loop through location array and get lat and long
+    let result: NSMutableArray = []
+    for item in location {
+        let itemResult: [Double] = [
+            (item as! NSDictionary)["lat"] as! Double,
+            (item as! NSDictionary)["long"] as! Double
+        ]
+//        result.append(itemResult)
+        result.add(itemResult)
+    }
     return result;
 }
 
