@@ -14,7 +14,12 @@
       android:allowBackup="false"
       android:theme="@style/AppTheme"
         android:dataExtractionRules="@xml/data_extraction_rules">
-      <activity
+        <service
+            android:name="vn.vietmap.services.android.navigation.v5.navigation.NavigationService"
+            android:foregroundServiceType="location"
+            android:exported="false">
+        </service>
+        <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
         android:configChanges="keyboard|keyboardHidden|orientation|screenSize|uiMode"

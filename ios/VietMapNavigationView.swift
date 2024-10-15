@@ -48,7 +48,7 @@ extension UIView {
     let _url = Bundle.main.object(forInfoDictionaryKey: "VietMapURL") as! String
     var _wayPoints = [Waypoint]()
     var _coordinates: [CLLocationCoordinate2D]?
-    
+    var _remainingPointCount: Int = 0
     @objc var routeController: RouteController?
     
     // MARK: - define parameter from RN
@@ -268,6 +268,9 @@ extension UIView {
         guard let strongSelf = self else { return }
         strongSelf.routes = routes
         guard let current = routes.first else { return }
+         
+        strongSelf._remainingPointCount = current.routeOptions.waypoints.count - 1
+        
         strongSelf._wayPoints = current.routeOptions.waypoints
         strongSelf._coordinates = current.coordinates
         strongSelf.sendEvent(event: strongSelf.onRouteBuilt, data: encodeRoute(route: current))
@@ -324,7 +327,7 @@ extension VietMapNavigationView : UIGestureRecognizerDelegate {
             let lat = (item as! NSArray)[0] as! Double
             let long = (item as! NSArray)[1] as! Double
             return Waypoint(coordinate: CLLocationCoordinate2D(latitude: lat, longitude: long))
-        }
+        } 
         embedding = true
         var mode: MBDirectionsProfileIdentifier = .automobileAvoidingTraffic
         
@@ -380,8 +383,21 @@ extension VietMapNavigationView: NavigationMapViewDelegate {
 // MARK: - RouteControllerDelegate
 extension VietMapNavigationView: RouteControllerDelegate {
     public func routeController(_ routeController: RouteController, didArriveAt waypoint: Waypoint) -> Bool {
-        sendEvent(event: onArrival)
-        suspendNotifications()
+        
+        let arrivalData: [String: Any] = [
+            "latitude": waypoint.coordinate.latitude,
+            "longitude": waypoint.coordinate.longitude
+        ]
+        sendEvent(event: onArrival, data:arrivalData)
+        if(_remainingPointCount == 1)
+        {
+            suspendNotifications()
+        }
+        else
+        {
+            _remainingPointCount -= 1
+        }
+
         return true;
     }
     

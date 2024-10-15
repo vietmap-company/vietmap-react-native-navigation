@@ -306,10 +306,13 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             setIsNavigationInprogress(true)
             console.log('onNavigationRunning');
           }}
-          onArrival={() => {
-            setIsNavigationInprogress(false)
-            setRouteProgressData(null)
+          onArrival={(event) => {
+            // setIsNavigationInprogress(false)
+            // setRouteProgressData(null)
+            console.log('onArrival', event.nativeEvent.data.latitude);
+            console.log('onArrival' + event.nativeEvent.data.longitude);
             console.log('You have reached your destination');
+            
           }}
           onRouteBuilt={(event) => {
             setRouteData(event)
@@ -323,23 +326,19 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             VietMapNavigationController.buildRoute(
               [
                 {
-                  lat: 10.759156,
-                  long: 106.675913,
+                  lat:10.765254,long: 106.671071
                 },
                 {
-                  lat: event.nativeEvent.data.latitude,
-                  long: event.nativeEvent.data.longitude,
+                  lat:10.768914,long: 106.661347
                 },
                 {
-                  lat: 10.382297,
-                  long: 106.103986,
+                  lat:10.759450,long: 106.657576
                 },
                 {
-                  lat: 10.770612,
-                  long: 106.714432,
+                  lat:10.753640,long: 106.670890
                 },
                 {
-                  lat: 11.040438,long:  106.703667
+                  lat: 10.750017,long: 106.660938
                 },
               ],
               'motorcycle'

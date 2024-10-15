@@ -101,7 +101,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           onMilestoneEvent={(event) => {
             console.log('onMilestoneEvent', event.nativeEvent);
           }}
-          onArrival={() => {
+          onArrival={(event) => {
             alert('You have reached your destination');
           }}
           onRouteBuilt={(event) => {
@@ -255,8 +255,13 @@ This function will call while user is off-route. The location when user off-rout
 
 #### `onArrival`
 
-This function will call while user is arrival at the destination
+This function will call while user is arrival at the destination.
 
+If you are navigating to multiple waypoints, this function will call when user arrival at the every waypoint. 
+
+Please check if the navigation is finished by count the number of waypoints and the number of arrival waypoints.
+
+The SDK will automatically stop the navigation when user arrival at the last waypoint.
 #### `onNewRouteSelected?: (event: RouteData) => void;`
 
 This function will call while user select a new route, cause VietMap SDK will find one or more route between two points. When user select new route, the `RouteData` will response.

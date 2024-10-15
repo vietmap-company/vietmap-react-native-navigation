@@ -182,9 +182,9 @@ const VMNavigation: React.FC<void> = () => {
             console.log('onMilestoneEvent', event.nativeEvent);
             console.log('=====================================================================');
           }}
-          onArrival={() => {
+          onArrival={(event) => {
             alert('You have reached your destination');
-
+            
 
           }}
           onRouteBuilt={(event) => {
