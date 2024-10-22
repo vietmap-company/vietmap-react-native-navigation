@@ -4,8 +4,7 @@ import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity 
 import VietMapNavigation, { NavigationProgressData } from '@vietmap/vietmap-react-native-navigation';
 import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
 import React, { useEffect, useState } from 'react'; 
-
-
+ 
 import { Icon } from 'react-native-elements';
 import Images from './img/index';
 import translationGuide from './trans/index';
@@ -182,7 +181,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           <Image
 
             style={{ height: 64, width: 64 }}
-            source={require('../assets/close.png')} />
+            source={require('./../assets/close.png')} />
         </Pressable>
         <View
           style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -213,7 +212,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           <Image
             style={{ height: 64, width: 64 }}
 
-            source={require('../assets/overview.png')} />
+            source={require('./../assets/overview.png')} />
         </Pressable>
       </View>
     </View>

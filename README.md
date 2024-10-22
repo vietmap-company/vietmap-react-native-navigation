@@ -30,6 +30,20 @@ Using `yarn`
 ```
 ---
 
+### Android configuration
+- Add below permission to `AndroidManifest.xml` file
+
+Our SDK use Service to run the navigation in the background, so you need to add the below permission to `AndroidManifest.xml` file
+
+```xml
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+```
+
+
 ### iOS Specific Instructions
  
 Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** with your API key.

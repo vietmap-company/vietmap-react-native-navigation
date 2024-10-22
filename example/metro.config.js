@@ -1,38 +1,46 @@
+const path = require('path');
+const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const glob = require('glob-to-regexp');
+
+const projectRoot = __dirname;
+const workspaceRoot = path.resolve(projectRoot, '../..');
+
 /**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
+ * Metro configuration
+  * https://reactnative.dev/docs/metro
  *
- * @format
+ * @type {import('metro-config').MetroConfig}
  */
 
-const path = require('path');
-const blacklist = require('metro-config/src/defaults/exclusionList');
-const escape = require('escape-string-regexp');
-const pak = require('../package.json');
+function withMonorepoPaths(config) {
+  // #1 - Watch all files in the monorepo
+  config.watchFolders = [workspaceRoot];
+  config.resolver.nodeModulesPaths = [
+    path.resolve(projectRoot, 'node_modules'),
+    path.resolve(workspaceRoot, 'node_modules'),
+  ];
 
-const root = path.resolve(__dirname, '../');
+  // #3 - Force resolving nested modules to the folders below
+  config.resolver.disableHierarchicalLookup = true;
 
-const modules = Object.keys({
-  ...pak.peerDependencies,
-});
+  return config;
+}
 
-module.exports = {
-  projectRoot: __dirname,
-  watchFolders: [root],
+const config = {
+  projectRoot: projectRoot,
+  watchFolders: [
+    path.resolve(__dirname, './assets'),
+    path.resolve(__dirname, './Navigation'),
+    path.resolve(__dirname, './svg'),
+    path.resolve(__dirname, './../example'),
 
-  // We need to make sure that only one version is loaded for peerDependencies
-  // So we blacklist them at the root, and alias them to the versions in example's node_modules
+    path.resolve(__dirname, './../img'),
+    path.resolve(__dirname, './../src'),
+  ],
   resolver: {
-    blacklistRE: blacklist(
-      modules.map(
-        m => new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`),
-      ),
-    ),
-
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {}),
+    extraNodeModules: new Proxy({}, {
+      get: (target, name) => path.join(process.cwd(), `node_modules/${name}`),
+    }),
   },
   transformer: {
     getTransformOptions: async () => ({
@@ -42,4 +50,15 @@ module.exports = {
       },
     }),
   },
+  presets: ['module:metro-react-native-babel-preset'],
+  overrides: [
+    {
+      test: './node_modules/ethers',
+      plugins: [
+        ["@babel/plugin-transform-private-methods", { "loose": true }]
+      ]
+    }
+  ]
 };
+
+module.exports = mergeConfig(withMonorepoPaths(getDefaultConfig(projectRoot)), config);

@@ -1,4 +1,4 @@
-declare type Coordinate = {
+type Coordinate = {
     lat: number;
     long: number;
 };

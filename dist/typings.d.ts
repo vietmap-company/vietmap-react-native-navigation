@@ -3,7 +3,7 @@
  */
 import { NavigationProgressData } from "./models/route_progress_data";
 import { RouteData } from "./models/route_data";
-declare type LocationData = {
+type LocationData = {
     nativeEvent: {
         data: {
             latitude: number;
@@ -13,13 +13,13 @@ declare type LocationData = {
         };
     };
 };
-declare type NavigationPadding = {
+type NavigationPadding = {
     left: number;
     top: number;
     right: number;
     bottom: number;
 };
-declare type InitialLatLngZoom = {
+type InitialLatLngZoom = {
     lat: number;
     long: number;
     zoom: number;

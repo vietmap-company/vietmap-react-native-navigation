@@ -2,7 +2,7 @@ require_relative '../node_modules/react-native/scripts/react_native_pods'
 require_relative '../node_modules/@react-native-community/cli-platform-ios/native_modules'
 
 # platform :ios, min_ios_version_supported
-platform :ios, '13'
+platform :ios, '14'
 install! 'cocoapods', :disable_input_output_paths => true
 
 target 'BasicApp' do
@@ -33,7 +33,7 @@ target 'BasicApp' do
 
   post_install do |installer|
     react_native_post_install(installer)
-    __apply_Xcode_12_5_M1_post_install_workaround(installer)
+    # __apply_Xcode_12_5_M1_post_install_workaround(installer)
     installer.pods_project.targets.each do |t|
       t.build_configurations.each do |bc|
           bc.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'

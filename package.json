@@ -1,12 +1,11 @@
 {
   "name": "@vietmap/vietmap-react-native-navigation",
   "title": "VietMap React Native turn by turn Navigation",
-  "version": "1.1.0-pre.4",
+  "version": "1.2.0",
   "description": "VietMap turn-by-turn navigation for React Native.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "source": "src/index",
-
   "publishConfig": {
     "access": "public"
   },
@@ -38,13 +37,10 @@
   "homepage": "https://maps.vietmap.vn",
   "peerDependencies": {
     "react": "*",
-    "react-native": "*",
-    "typescript": "*"
+    "react-native": "*"
   },
   "devDependencies": {
     "react": "18.0.0",
-    "react-native": "0.71.6",
-    "typescript": "4.3.5",
-    "@types/node": "18.19.55"
+    "react-native": "0.74.5"
   }
 }
