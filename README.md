@@ -41,8 +41,20 @@ Our SDK use Service to run the navigation in the background, so you need to add 
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
 ```
-
+Add below code to AndroidManifest (for android 14 and above).
+```xml
+  <application>
+  ...
+    <!-- Add this code block -->
+    <service
+        android:name="vn.vietmap.services.android.navigation.v5.navigation.NavigationService"
+        android:foregroundServiceType="location"
+        android:exported="false">
+    </service>
+  </application>
+```
 
 ### iOS Specific Instructions
  
@@ -283,6 +295,7 @@ This function will call while user select a new route, cause VietMap SDK will fi
 
 
 ### Add a controller to control the navigation progress
+
 ```tsx
         <View style={{ flex: 1, flexDirection: 'row' }}>
           <View key={'navigation'} style={{ flex: 1 }}>
@@ -355,7 +368,30 @@ This function will call while user select a new route, cause VietMap SDK will fi
           </View>
         </View>
 ```
+### Importantly
+All function of `VietMapNavigationController` must be called after the `VietMapNavigation` component is mounted and the map is ready. If you call it before the map is ready, it will make your app crash.
 
+If you need to call the function of `VietMapNavigationController` when the map is ready, you must use the `onMapReady` callback of `VietMapNavigation` component or use it inside a button.
+```tsx
+  <VietMapNavigation
+  
+    onMapReady={() => {
+      VietMapNavigationController.buildRoute(
+        [
+          {
+            lat: 10.759156,
+            long: 106.675913,
+          },
+          {
+            lat: event.nativeEvent.data.latitude,
+            long: event.nativeEvent.data.longitude,
+          },
+        ],
+        'motorcycle'
+      )
+    }}
+  />
+```
 ### Show the instruction guide to navigation screen
 - The instruction guide text response in `onRouteProgressChange` callback, you can get it by this code:
 ```tsx

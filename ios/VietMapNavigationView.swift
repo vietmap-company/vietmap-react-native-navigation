@@ -194,6 +194,12 @@ extension UIView {
         guard let rawLocation = notification.userInfo?[RouteControllerNotificationUserInfoKey.rawLocationKey] as? CLLocation else { return }
         // Update the user puck
         let camera = MLNMapCamera(lookingAtCenter: location.coordinate, altitude: altitudeForZoomLevel(zoomLevel: navigationZoomLevel), pitch: 60, heading: location.course)
+        // Add maneuver arrow
+        if routeProgress.currentLegProgress.followOnStep != nil {
+            navigationMapView.addArrow(route: routeProgress.route, legIndex: routeProgress.legIndex, stepIndex: routeProgress.currentLegProgress.stepIndex + 1)
+        } else {
+            navigationMapView.removeArrow()
+        }
         navigationMapView.updateCourseTracking(location: location, camera: camera, animated: false)
         sendEvent(event: onRouteProgressChange, data: encodeRouteProgressChange(routeProgress: routeProgress,location:location,rawLocation:rawLocation))
     }

@@ -3,15 +3,15 @@
 import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity } from 'react-native';
 import VietMapNavigation, { NavigationProgressData } from '@vietmap/vietmap-react-native-navigation';
 import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
-import React, { useEffect, useState } from 'react'; 
- 
+import React, { useEffect, useState } from 'react';
+
 import { Icon } from 'react-native-elements';
 import Images from './img/index';
 import translationGuide from './trans/index';
 import { RouteData } from '../../src/models/route_data';
 
 
-const VietMapNavigationScreen: React.FC<void> = () => { 
+const VietMapNavigationScreen: React.FC<void> = () => {
 
   const getGuideText = (modifier: string, type: string) => {
     console.log(modifier, type)
@@ -20,7 +20,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
       let data = [
         type.split(" ").join("_"),
         modifier.split(" ").join("_")
-      ]; 
+      ];
       setGuideKey(data.join('_'))
       setGuideText(translationGuide.get(data.join('_'))?.toLowerCase() ?? '');
 
@@ -223,10 +223,10 @@ const VietMapNavigationScreen: React.FC<void> = () => {
       borderRadius: 10,
       width: Dimensions.get('window').width - 20, height: 100, backgroundColor: '#2A5DFF', position: 'absolute', left: 10, top: 10, opacity: 0.7
     }}>
-      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' ,paddingLeft: 20}}>
-        
+      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingLeft: 20 }}>
+
         <Image style={{ height: 64, width: 64 }} source={Images[guideKey]} />
-        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start',paddingLeft: 20 }}>
+        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', paddingLeft: 20 }}>
           <Text
             style={{
               color: 'white',
@@ -250,7 +250,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
   return (
     <View style={styles.container}>
       <View style={styles.mapContainer}>
-        <VietMapNavigation
+        <VietMapNavigation 
           initialLatLngZoom={
             {
               lat: 10.704619,
@@ -272,8 +272,8 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             getTimeArriveRemaining()
             console.log('-------------------------------')
             console.log(timeArriveRemaining)
+            console.log('onRouteProgressChange', event.nativeEvent?.data.location);
             console.log('-------------------------------')
-
             calculateTotalDistance(routeProgressData?.nativeEvent?.data?.distanceRemaining)
             setInstructionText(event?.nativeEvent?.data?.currentStepInstruction ?? '');
             let modifier = event?.nativeEvent?.data?.currentModifier
@@ -283,7 +283,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
               var data = [
                 type.replace(' ', '_'),
                 modifier.replace(' ', '_')
-              ]; 
+              ];
               getGuideText(modifier, type);
               // setInstructionImage(path);
 
@@ -311,7 +311,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             console.log('onArrival', event.nativeEvent.data.latitude);
             console.log('onArrival' + event.nativeEvent.data.longitude);
             console.log('You have reached your destination');
-            
+
           }}
           onRouteBuilt={(event) => {
             setRouteData(event)
@@ -322,26 +322,42 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           }}
           onMapLongClick={(event) => {
             console.log('onMapLongClickzz', event.nativeEvent.data.latitude);
-            VietMapNavigationController.buildRoute(
-              [
-                {
-                  lat:10.765254,long: 106.671071
-                },
-                {
-                  lat:10.768914,long: 106.661347
-                },
-                {
-                  lat:10.759450,long: 106.657576
-                },
-                {
-                  lat:10.753640,long: 106.670890
-                },
-                {
-                  lat: 10.750017,long: 106.660938
-                },
-              ],
-              'motorcycle'
-            )
+            // VietMapNavigationController.buildRoute(
+            //   [
+            //     {
+            //       lat:10.765254,long: 106.671071
+            //     },
+            //     {
+            //       lat:10.768914,long: 106.661347
+            //     },
+            //     {
+            //       lat:10.759450,long: 106.657576
+            //     },
+            //     {
+            //       lat:10.753640,long: 106.670890
+            //     },
+            //     {
+            //       lat: 10.750017,long: 106.660938
+            //     },
+            //   ],
+            //   'motorcycle'
+            // )
+            // Get current location
+
+            // VietMapNavigationController.buildRoute([
+            //   {
+            //     lat: 10.759118013383382, long:106.675830658235
+            //   },
+            //   {
+            //     lat:event.nativeEvent.data.latitude, long:event.nativeEvent.data.longitude
+            //   },],
+            //   'motorcycle'
+            // )
+            VietMapNavigationController.buildRoute([
+              { lat: 10.798447, long: 106.669681 }, {
+                lat: 10.81060614701359, long: 106.66920074577318
+              }],
+              'motorcycle');
           }}
           onCancelNavigation={() => {
             setIsNavigationInprogress(false)

@@ -1,35 +1,33 @@
 package vn.vietmap.vietmapnavigation
 
+//import vn.vietmap.bindgen.Expected
+//import vn.vietmap.vietmapsdk.maps.EdgeInsets
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Color
 import android.location.Location
 import android.os.Build
 import android.util.Log
 import android.view.LayoutInflater
 import android.widget.FrameLayout
+import androidx.annotation.RequiresApi
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.core.graphics.component1
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.uimanager.ThemedReactContext
-import com.mapbox.api.directions.v5.models.DirectionsRoute
-//import vn.vietmap.bindgen.Expected
-import com.mapbox.geojson.Point
-//import vn.vietmap.vietmapsdk.maps.EdgeInsets
-import vn.vietmap.vietmapsdk.maps.MapView
-import vn.vietmap.vietmapsdk.maps.VietMapGL
-import vn.vietmap.vietmapnavigation.databinding.NavigationViewBinding
 import com.facebook.react.uimanager.events.RCTEventEmitter
 import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
-import vn.vietmap.model.CurrentCenterPoint
-import vn.vietmap.model.VietMapEvents
-import vn.vietmap.model.VietMapLocation
-import vn.vietmap.model.VietMapRouteProgressEvent
-import vn.vietmap.utilities.JSONConverter
 import com.mapbox.api.directions.v5.models.BannerInstructions
 import com.mapbox.api.directions.v5.models.DirectionsResponse
+import com.mapbox.api.directions.v5.models.DirectionsRoute
 import com.mapbox.api.directions.v5.models.RouteOptions
+import com.mapbox.geojson.Point
 import com.mapbox.turf.TurfMisc
 import org.json.JSONObject
 import retrofit2.Call
@@ -37,6 +35,11 @@ import retrofit2.Callback
 import retrofit2.Response
 import timber.log.Timber
 import vn.vietmap.android.gestures.MoveGestureDetector
+import vn.vietmap.model.CurrentCenterPoint
+import vn.vietmap.model.VietMapEvents
+import vn.vietmap.model.VietMapLocation
+import vn.vietmap.model.VietMapRouteProgressEvent
+import vn.vietmap.services.android.navigation.ui.v5.ThemeSwitcher
 import vn.vietmap.services.android.navigation.ui.v5.camera.CameraOverviewCancelableCallback
 import vn.vietmap.services.android.navigation.ui.v5.listeners.BannerInstructionsListener
 import vn.vietmap.services.android.navigation.ui.v5.listeners.NavigationListener
@@ -65,6 +68,8 @@ import vn.vietmap.services.android.navigation.v5.routeprogress.ProgressChangeLis
 import vn.vietmap.services.android.navigation.v5.routeprogress.RouteProgress
 import vn.vietmap.services.android.navigation.v5.snap.SnapToRoute
 import vn.vietmap.services.android.navigation.v5.utils.RouteUtils
+import vn.vietmap.utilities.JSONConverter
+import vn.vietmap.vietmapnavigation.databinding.NavigationViewBinding
 import vn.vietmap.vietmapsdk.Vietmap
 import vn.vietmap.vietmapsdk.camera.CameraPosition
 import vn.vietmap.vietmapsdk.camera.CameraUpdate
@@ -77,7 +82,9 @@ import vn.vietmap.vietmapsdk.location.LocationComponentOptions
 import vn.vietmap.vietmapsdk.location.engine.LocationEngine
 import vn.vietmap.vietmapsdk.location.modes.CameraMode
 import vn.vietmap.vietmapsdk.location.modes.RenderMode
+import vn.vietmap.vietmapsdk.maps.MapView
 import vn.vietmap.vietmapsdk.maps.Style
+import vn.vietmap.vietmapsdk.maps.VietMapGL
 import vn.vietmap.vietmapsdk.style.layers.LineLayer
 import vn.vietmap.vietmapsdk.style.layers.Property.LINE_CAP_ROUND
 import vn.vietmap.vietmapsdk.style.layers.Property.LINE_JOIN_ROUND
@@ -94,6 +101,7 @@ import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+
 
 class VietMapNavigationView(
     private val context: ThemedReactContext,
@@ -214,6 +222,21 @@ class VietMapNavigationView(
             LocationEngineProvider.getBestLocationEngine(context)
         }
 
+        context.currentActivity?.let {
+            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                val permissionState =
+                    ContextCompat.checkSelfPermission(it, Manifest.permission.POST_NOTIFICATIONS)
+
+                if (permissionState == PackageManager.PERMISSION_DENIED) {
+                    ActivityCompat.requestPermissions(
+                        it,
+                        arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+                        1
+                    )
+                }
+            }
+        }
+
         binding.mapView.getMapAsync {
             this.onMapReady = true
             this.vietMapGL = it
@@ -246,9 +269,6 @@ class VietMapNavigationView(
                         sendEvent(VietMapEvents.ON_MAP_MOVE_END)
                     }
                 })
-
-
-
                 enableLocationComponent(style)
                 initMapRoute()
                 configSpeechPlayer()
@@ -356,8 +376,19 @@ class VietMapNavigationView(
                     if (navigationMapRoute != null) {
                         navigationMapRoute?.removeRoute()
                     } else {
+                        val routeStyleRes = ThemeSwitcher.retrieveNavigationViewStyle(
+                            binding.mapView!!.context,
+                            vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
+                        )
+                        
                         navigationMapRoute =
-                            NavigationMapRoute(binding.mapView, vietMapGL, "vmadmin_province")
+                            NavigationMapRoute(
+                                navigation,
+                                binding.mapView!!,
+                                vietMapGL!!,
+                                routeStyleRes,
+                                "vmadmin_province"
+                            )
                     }
 
                     //show multiple route to map
@@ -501,8 +532,19 @@ class VietMapNavigationView(
 //    }
 
     private fun initMapRoute() {
+        val routeStyleRes = ThemeSwitcher.retrieveNavigationViewStyle(
+            binding.mapView!!.context,
+            vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
+        )
+        
         navigationMapRoute =
-            NavigationMapRoute(binding.mapView, vietMapGL, "vmadmin_province")
+            NavigationMapRoute(
+                navigation,
+                binding.mapView!!,
+                vietMapGL!!,
+                routeStyleRes,
+                "vmadmin_province"
+            )
 
         navigationMapRoute?.setOnRouteSelectionChangeListener {
             routeClicked = true
@@ -672,8 +714,19 @@ class VietMapNavigationView(
                 if (navigationMapRoute != null) {
                     navigationMapRoute?.removeRoute()
                 } else {
+                    val routeStyleRes = ThemeSwitcher.retrieveNavigationViewStyle(
+                        binding.mapView!!.context,
+                        vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
+                    )
+                    
                     navigationMapRoute =
-                        NavigationMapRoute(binding.mapView, vietMapGL, "vmadmin_province")
+                        NavigationMapRoute(
+                            navigation,
+                            binding.mapView!!,
+                            vietMapGL!!,
+                            routeStyleRes,
+                            "vmadmin_province"
+                        )
                 }
 
                 //show multiple route to map
@@ -715,10 +768,6 @@ class VietMapNavigationView(
                 points,
                 profile
             )
-//            originPoint =
-//                Point.fromLngLat(points.getMap(0).getDouble("long"), points.getMap(0).getDouble("lat"))
-//            destinationPoint =
-//                Point.fromLngLat(points.getMap(1).getDouble("long"), points.getMap(1).getDouble("lat"))
         }
 
     }
@@ -728,6 +777,8 @@ class VietMapNavigationView(
     }
 
     fun startNavigation() {
+        context.currentActivity?.runOnUiThread {
+
         tilt = 10000.0
         isOverviewing = false
         isNavigationCanceled = false
@@ -753,16 +804,23 @@ class VietMapNavigationView(
             navigation?.addMilestoneEventListener(this)
             navigation?.addOffRouteListener(this)
             navigation?.addProgressChangeListener(this)
+
+            
             navigation?.snapEngine = snapEngine
+
+            navigationMapRoute!!.updateRouteArrowVisibilityTo(true)
+            navigationMapRoute!!.showAlternativeRoutes(true)
+            navigationMapRoute!!.updateRouteVisibilityTo(true)
+            navigationMapRoute!!.showAlternativeRoutes(true)
             currentRoute?.let {
                 isNavigationInProgress = true
                 navigation?.startNavigation(currentRoute!!)
                 sendEvent(VietMapEvents.NAVIGATION_RUNNING)
-                ///TODO: send event here
                 recenter()
 
             }
         }
+            }
     }
 
     fun finishNavigation(isOffRouted: Boolean = false) {

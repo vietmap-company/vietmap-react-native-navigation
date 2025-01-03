@@ -18,7 +18,7 @@
     "noEmit": true,
     "paths": {
       "@assets/*": ["./assets/*"],
-      "@vietmap/vietmap-react-native-navigation": ["../src"],
+      // "@vietmap/vietmap-react-native-navigation": ["../src"],
       "react": ["./node_modules/@types/react"],
       "react-native": ["./node_modules/@types/react-native"],
       "@assets": ["./assets"],
