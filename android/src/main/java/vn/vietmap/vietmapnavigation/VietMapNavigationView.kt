@@ -351,7 +351,7 @@ class VietMapNavigationView(
 
             val builder = build.build()
 
-            listNavigationRemainingPoints.removeFirst()
+            listNavigationRemainingPoints.removeAt(0)
             builder.getRoute(object : Callback<DirectionsResponse> {
                 override fun onResponse(
                     call: Call<DirectionsResponse?>, response: Response<DirectionsResponse?>,
@@ -692,7 +692,7 @@ class VietMapNavigationView(
             build.addWaypoint(listNavigationRemainingPoints[i])
         }
         val builder = build.build()
-        listNavigationRemainingPoints.removeFirst()
+        listNavigationRemainingPoints.removeAt(0)
         builder.getRoute(object : Callback<DirectionsResponse?> {
             override fun onResponse(
                 call: Call<DirectionsResponse?>, response: Response<DirectionsResponse?>,
@@ -1077,7 +1077,7 @@ class VietMapNavigationView(
                 } catch (_: Exception) {
                 }
             }
-            listNavigationRemainingPoints.removeFirst()
+            listNavigationRemainingPoints.removeAt(0)
             Log.d("DataList---------------", listNavigationRemainingPoints.size.toString())
             Log.d("Datalist", listNavigationRemainingPoints.toList().toString())
 
