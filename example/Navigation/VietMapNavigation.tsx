@@ -11,7 +11,7 @@ import translationGuide from './trans/index';
 import { RouteData } from '../../src/models/route_data';
 
 
-const VietMapNavigationScreen: React.FC<void> = () => {
+const VietMapNavigationScreen = () => {
 
   const getGuideText = (modifier: string, type: string) => {
     console.log(modifier, type)
@@ -120,7 +120,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
         <Text
           style={{
             textAlignVertical: 'center',
-            verticalAlign: 'middle',
+            // verticalAlign: 'middle',
             textAlign: 'center',
             color: 'black',
             fontSize: 16,
@@ -152,7 +152,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
 
           style={{
             textAlignVertical: 'center',
-            verticalAlign: 'middle',
+            // verticalAlign: 'middle',
             textAlign: 'center',
             color: 'black',
             fontSize: 16,
