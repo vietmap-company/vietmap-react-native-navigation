@@ -84,8 +84,8 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
 
     @ReactProp(name = "initialLatLngZoom")
     fun setInitialLatLngZoom(view: VietMapNavigationView, initialLatLng: ReadableMap?) {
-        if(initialLatLng==null) {
-            view.setInitialLatLngZoom(initialLatLng!!)
+        if(initialLatLng!=null) {
+            view.setInitialLatLngZoom(initialLatLng)
         }
     }
     @ReactProp(name = "navigationTiltLevel")
