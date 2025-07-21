@@ -22,7 +22,7 @@ export class VietMapNavigationController{
     ///cycling
     ///walking
     ///motorcycle
-    static buildRoute(coordinates: Coordinate[], profile:  'driving-traffic'|'cycling'|'walking'|'motorcycle') {
+    static buildRoute(coordinates: Coordinate[], profile:  'driving-traffic'|'cycling'|'walking'|'motorcycle'|'truck') {
         return VietMapNavigationModule.buildRoute(coordinates, profile);
     }
  

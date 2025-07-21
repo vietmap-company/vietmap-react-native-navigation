@@ -76,6 +76,12 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
         view.setApiKey(sources)
     }
 
+    @ReactProp(name = "baseUrl")
+    fun setBaseUrl(view: VietMapNavigationView, sources: String?) {
+        if (sources != null) {
+            view.setBaseUrl(sources)
+        }
+    }
 
     @ReactProp(name = "navigationZoomLevel")
     fun setNavigationZoomLevel(view: VietMapNavigationView, zoomLevel: Double) {

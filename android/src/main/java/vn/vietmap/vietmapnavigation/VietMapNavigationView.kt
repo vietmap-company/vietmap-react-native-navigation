@@ -140,6 +140,7 @@ class VietMapNavigationView(
     private var routeUtils = RouteUtils()
     private val snapEngine = SnapToRoute()
     private var apikey: String? = null
+    private var baseUrl: String = "https://maps.vietmap.vn/api/navigations/route/"
     private var speechPlayer: SpeechPlayer? = null
     private var routeProgress: RouteProgress? = null
     private var fusedLocationClient: FusedLocationProviderClient? = null
@@ -333,6 +334,7 @@ class VietMapNavigationView(
 
             sendEvent(VietMapEvents.ROUTE_BUILDING)
             val build = NavigationRoute.builder(context)
+                .baseUrl(baseUrl)
                 .apikey(apikey ?: "")
 
                 .origin(coordinates.first(), 60.0, br)
@@ -344,7 +346,7 @@ class VietMapNavigationView(
                 ///walking
                 ///motorcycle
                 .profile(profile ?: "driving-traffic")
-
+            
             for (i in 1 until coordinates.size - 1) {
                 build.addWaypoint(coordinates[i])
             }
@@ -356,7 +358,6 @@ class VietMapNavigationView(
                 override fun onResponse(
                     call: Call<DirectionsResponse?>, response: Response<DirectionsResponse?>,
                 ) {
-
                     if (response.body() == null || response.body()!!.routes().size < 1) {
                         sendEvent(VietMapEvents.ROUTE_BUILD_FAILED)
                         return
@@ -657,7 +658,6 @@ class VietMapNavigationView(
     private fun getRoute(
         context: Context, isStartNavigation: Boolean, bearing: Float?, profile: String,
     ) {
-
 //        if (!PluginUtilities.isNetworkAvailable(context)) {
 //            sendEvent(
 //                VietMapEvents.ROUTE_BUILD_FAILED,
@@ -677,6 +677,7 @@ class VietMapNavigationView(
             .user("")
             .build()
         val build = NavigationRoute.builder(context)
+            .baseUrl(baseUrl)
             .apikey(apikey ?: "")
             .routeOptions(routeOptions)
             .origin(listNavigationRemainingPoints.first(), 60.0, br.toDouble())
@@ -1343,5 +1344,9 @@ class VietMapNavigationView(
         context
             .getJSModule(RCTEventEmitter::class.java)
             .receiveEvent(id, eventName.value, writableMap)
+    }
+
+    fun setBaseUrl(baseUrl: String) {
+        this.baseUrl = baseUrl
     }
 }
