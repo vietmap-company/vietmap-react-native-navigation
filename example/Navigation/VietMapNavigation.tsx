@@ -266,7 +266,6 @@ const VietMapNavigationScreen = () => {
           navigationZoomLevel={18}
           shouldSimulateRoute={true}
           apiKey={'0cd03613175a67f87567f86f0ba2f3b818e3a2b5f2c2634b'}
-          // baseUrl={'https://frt.map.zone/api/navigations/route/'}
           onRouteProgressChange={(event) => {
             setRouteProgressData(event)
             calculateEstimatedArrivalTime()

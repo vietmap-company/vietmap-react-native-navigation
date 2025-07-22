@@ -8,11 +8,8 @@ import com.facebook.react.uimanager.ViewManager
 
 class VietMapNavigationPackage : ReactPackage {
   override fun createNativeModules(reactContext: ReactApplicationContext): List<NativeModule> {
-
     val modules: MutableList<NativeModule> = ArrayList()
-
-    modules.add(VietMapNavigationModule())
-
+    modules.add(VietMapNavigationModule(reactContext))
     return modules
   }
 

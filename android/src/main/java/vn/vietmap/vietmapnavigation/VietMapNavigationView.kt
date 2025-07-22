@@ -308,8 +308,8 @@ class VietMapNavigationView(
         for (i in 0 until points.size()) {
             coordinatesList.add(
                 Point.fromLngLat(
-                    points.getMap(i).getDouble("long"),
-                    points.getMap(i).getDouble("lat")
+                    points.getMap(i)?.getDouble("long") ?: 0.0,
+                    points.getMap(i)?.getDouble("lat") ?: 0.0
                 )
             )
         }
@@ -331,7 +331,7 @@ class VietMapNavigationView(
     private fun findRoute(coordinates: List<Point>, profile: String?) {
         try {
             val br = bearing
-
+            Log.d("VietMapNavigation", "getroute")
             sendEvent(VietMapEvents.ROUTE_BUILDING)
             val build = NavigationRoute.builder(context)
                 .baseUrl(baseUrl)

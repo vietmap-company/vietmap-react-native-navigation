@@ -14,8 +14,10 @@ VietMap turn-by-turn routing based on real-time traffic for React Native. A navi
 
 ## Installation Requirements
 - You need an API key from VietMap to show the map, fetch the route, and start navigation.
-- VietMap navigation SDK only supported React Native version 0.70 and above.
-If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
+- **Compatibility**: 
+  - React Native: 0.70.0 and above (tested up to 0.80.1)
+  - React: 18.0.0 and above (tested up to 19.1.0)
+- If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
 ## Installation
 
 Using `npm`
@@ -419,6 +421,53 @@ Replace all `space` with `_` and join two variables, you will get the turn direc
   /// The distance user traveled from the origin point, measured in meters 
   event?.nativeEvent?.distanceTraveled
 ```
+
+## Troubleshooting
+
+### iOS Build Error: Multiple commands produce Assets.car
+
+If you encounter this error during iOS build:
+```
+❌ error: Multiple commands produce '/Library/Developer/Xcode/DerivedData/example-hhsxpyfcdgdhlgcoumkgcndusmvl/Build/Products/Debug-iphonesimulator/example.app/Assets.car'
+```
+
+**Solution:** Add the following code to your `Podfile` in the `post_install` block:
+
+```ruby
+post_install do |installer|
+  # ...existing code...
+  
+  # Fix duplicate Assets.car issue by updating resource references
+  resources_script_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources.sh')
+  debug_input_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources-Debug-input-files.xcfilelist')
+  release_input_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources-Release-input-files.xcfilelist')
+  
+  # Remove VietMapNavigation Assets.xcassets references from all files
+  [resources_script_path, debug_input_path, release_input_path].each do |file_path|
+    if File.exist?(file_path)
+      content = File.read(file_path)
+      # Remove lines containing VietMapNavigation Assets.xcassets
+      updated_content = content.gsub(/.*VietMapNavigation.*Assets\.xcassets.*\n/, '')
+      File.write(file_path, updated_content)
+    end
+  end
+  
+  # ...existing code...
+end
+```
+
+**Note:** Replace `Pods-example` with your actual target name if different.
+
+After adding this code, run:
+```bash
+cd ios && pod install && cd ..
+```
+
+Then clean and rebuild your project:
+```bash
+npx react-native run-ios --clean
+```
+
 ## Contributing
 
 Contributions are very welcome. Please check out the [contributing document](CONTRIBUTING.md).
