@@ -1,8 +1,8 @@
 /* eslint-disable comma-dangle */
 // import React from 'react';
 import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity } from 'react-native';
-import VietMapNavigation, { NavigationProgressData } from '@vietmap/vietmap-react-native-navigation';
-import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+import VietMapNavigation, { NavigationProgressData } from '../../src';
+import { VietMapNavigationController } from '../../src';
 import React, { useEffect, useState } from 'react';
 
 import { Icon } from 'react-native-elements';
@@ -265,7 +265,8 @@ const VietMapNavigationScreen = () => {
           }}
           navigationZoomLevel={18}
           shouldSimulateRoute={true}
-          apiKey={'YOUR_API_KEY_HERE'}
+          apiKey={'0cd03613175a67f87567f86f0ba2f3b818e3a2b5f2c2634b'}
+          // baseUrl={'https://frt.map.zone/api/navigations/route/'}
           onRouteProgressChange={(event) => {
             setRouteProgressData(event)
             calculateEstimatedArrivalTime()

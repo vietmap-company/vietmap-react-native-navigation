@@ -63,7 +63,7 @@
     <style name="TestNavigationViewLight" parent="NavigationViewLight">
         <!-- Map style URL -->
         <item name="navigationViewMapStyle">
-            https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_API_KEY_HERE
+            https://maps.vietmap.vn/api/maps/light/styles.json?apikey=0a55c0d9cf662edbf7c94db066e0ff16e17d5a9c4e565040
         </item>
     </style>
 </resources>

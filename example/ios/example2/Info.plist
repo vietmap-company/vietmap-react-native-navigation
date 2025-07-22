@@ -32,7 +32,7 @@
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string></string>
+	<string>Your request location description</string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -48,16 +48,14 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>VietMapURL</key>
-	<string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_API_KEY_HERE</string>
+	<string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=0a55c0d9cf662edbf7c94db066e0ff16e17d5a9c4e565040</string>
 	<key>VietMapAPIBaseURL</key>
-	<string>https://maps.vietmap.vn/api/navigations/route/</string>
+	<string>https://frt.map.zone/api/navigations/route/</string>
 	<key>VietMapAccessToken</key>
-	<string>YOUR_API_KEY_HERE</string>  
+	<string>0cd03613175a67f87567f86f0ba2f3b818e3a2b5f2c2634b</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Your request location description</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>Your request location description</string>
-	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your request location description</string>
 </dict>
 </plist>

@@ -11,7 +11,7 @@ class VietMapNavigationPackage : ReactPackage {
 
     val modules: MutableList<NativeModule> = ArrayList()
 
-    modules.add(VietMapNavigationModule.instance)
+    modules.add(VietMapNavigationModule())
 
     return modules
   }

@@ -1,12 +1,12 @@
 {
   "extends": "@react-native/typescript-config/tsconfig.json",
-  // "compilerOptions": {
-  //   "paths": {
-  //     "@assets/*": ["./assets/*"],
-  //     "@vietmap/vietmap-react-native-navigation": ["../src"],
-  //     "react": ["./node_modules/@types/react"],
-  //     "react-native": ["./node_modules/@types/react-native"],
-  //     "@assets": ["./assets"],
-  //   },
-  // },
+  "compilerOptions": {
+    "paths": {
+      "@assets/*": ["./assets/*"],
+      "@vietmap/vietmap-react-native-navigation": ["../src"],
+      "react": ["./node_modules/@types/react"],
+      "react-native": ["./node_modules/@types/react-native"],
+      "@assets": ["./assets"],
+    },
+  },
 }
