@@ -33,6 +33,7 @@ interface MilestoneData {
     };
 }
 export interface IVietMapNavigationProps {
+    baseUrl?: string;
     apiKey: string;
     shouldSimulateRoute?: boolean;
     initialLatLngZoom?: InitialLatLngZoom;

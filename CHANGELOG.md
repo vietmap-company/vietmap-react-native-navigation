@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2025-07-22
+
+### Fixed
+- **Native Module Export**: Fixed VietMapNavigationModule export issue in React Native 0.80.1
+  - Corrected ReactContextBaseJavaModule constructor to properly accept ReactApplicationContext
+  - Fixed singleton pattern implementation for native module
+  - Improved module registration in VietMapNavigationPackage
+- **Auto-linking**: Removed deprecated `react-native.config.js` file
+  - React Native 0.60+ handles auto-linking automatically
+  - No manual configuration needed for modern React Native versions
+
+### Improved
+- **API Call Logging**: Added detailed logging for navigation API requests
+  - Better debugging support for custom baseUrl configurations
+  - Enhanced error tracking for route building failures
+- **Native Module Interface**: Added TypeScript interface for VietMapNavigationModule
+  - Better type safety and IDE support
+  - Clearer method signatures and return types
+
 ## [1.5.0] - 2025-01-22
 
 ### Added
