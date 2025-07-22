@@ -8,8 +8,11 @@ const path = require('path');
  * @type {import('metro-config').MetroConfig}
  */
 
+const defaultConfig = getDefaultConfig(__dirname);
+
 const config = {
   resolver: {
+    ...defaultConfig.resolver,
     alias: {
       '@vietmap/vietmap-react-native-navigation': path.resolve(__dirname, '../src'),
       '@assets': path.resolve(__dirname, './assets'),
@@ -25,6 +28,15 @@ const config = {
     path.resolve(__dirname, './assets'),
     path.resolve(__dirname, '../'),
   ],
+  transformer: {
+    ...defaultConfig.transformer,
+    getTransformOptions: async () => ({
+      transform: {
+        experimentalImportSupport: false,
+        inlineRequires: true,
+      },
+    }),
+  },
 };
 
-module.exports = mergeConfig(getDefaultConfig(__dirname), config);
+module.exports = mergeConfig(defaultConfig, config);

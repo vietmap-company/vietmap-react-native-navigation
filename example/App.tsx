@@ -6,12 +6,17 @@
  */
 
 import React, {useEffect} from 'react';
-import {SafeAreaView, useColorScheme} from 'react-native';
-import {Colors} from 'react-native/Libraries/NewAppScreen';
+import {SafeAreaView, useColorScheme, View, Text, TouchableOpacity, StyleSheet, Alert} from 'react-native';
 // import NavigationComponent from './NavigationComponent';
 // import VMNavigation from './VMNavigationComponent';
 import VietMapNavigationScreen from './Navigation/VietMapNavigation'
 import {PermissionsAndroid} from 'react-native';
+import { VietMapNavigationModule } from '../src/native_modules';
+
+const Colors = {
+  lighter: '#F3F3F3',
+  darker: '#222222',
+};
 
 const App = () => {
   const isDarkMode = useColorScheme() === 'dark';
@@ -22,6 +27,21 @@ const App = () => {
   };
 
   useEffect(() => {
+    // Test native module
+    const testNativeModule = () => {
+      if (VietMapNavigationModule) {
+        console.log('Testing VietMapNavigationModule...');
+        try {
+          VietMapNavigationModule.testModule();
+          console.log('VietMapNavigationModule test successful!');
+        } catch (error) {
+          console.error('VietMapNavigationModule test failed:', error);
+        }
+      } else {
+        console.error('VietMapNavigationModule is not available');
+      }
+    };
+
     const requestLocationPermission = async () => {
       try {
         await PermissionsAndroid.request(

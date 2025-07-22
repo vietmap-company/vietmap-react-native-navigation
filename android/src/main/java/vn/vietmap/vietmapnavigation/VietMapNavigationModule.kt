@@ -1,6 +1,7 @@
 package vn.vietmap.vietmapnavigation
 
 import android.util.Log
+import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
 import com.facebook.react.bridge.ReadableArray
@@ -10,27 +11,23 @@ import com.facebook.react.bridge.WritableNativeArray
 import vn.vietmap.model.VietmapReactNativeEvent
 
 
-class VietMapNavigationModule : ReactContextBaseJavaModule() {
+class VietMapNavigationModule(reactContext: ReactApplicationContext) : ReactContextBaseJavaModule(reactContext) {
+    
     companion object {
-
-        val instance: VietMapNavigationModule = VietMapNavigationModule()
+        var currentInstance: VietMapNavigationModule? = null
     }
-
-    /*
-    Kotlin ➡️ Javascript
-    -------------------------------
-    Boolean ➡️ Bool
-    Integer ➡️ Number
-    Double ➡️ Number
-    Float ➡️ Number
-    String ➡️ String
-    Callback ➡️ JavaScript function
-    ReadableMap ➡️ JavaScript object (associative array)
-    ReadableArray ➡️ JavaScript array
-     */
-    @ReactMethod
+    
+    init {
+        currentInstance = this
+    }
+    
     override fun getName(): String {
         return "VietMapNavigationModule"
+    }
+
+    @ReactMethod
+    fun testModule() {
+        Log.d("VietMapNavigationModule", "Module is working correctly!")
     }
 
 
@@ -65,16 +62,16 @@ class VietMapNavigationModule : ReactContextBaseJavaModule() {
         val originCoordinates: WritableArray = WritableNativeArray()
         val destinationCoordinates: WritableArray = WritableNativeArray()
         originCoordinates.pushDouble(
-            points.getMap(0).getDouble("long")
+            points.getMap(0)?.getDouble("long") ?: 0.0
         )
         originCoordinates.pushDouble(
-            points.getMap(0).getDouble("lat")
+            points.getMap(0)?.getDouble("lat") ?: 0.0
         )
         destinationCoordinates.pushDouble(
-            points.getMap(1).getDouble("long")
+            points.getMap(1)?.getDouble("long") ?: 0.0
         )
         destinationCoordinates.pushDouble(
-            points.getMap(1).getDouble("lat")
+            points.getMap(1)?.getDouble("lat") ?: 0.0
         )
         coordinatesList.pushArray(
             originCoordinates

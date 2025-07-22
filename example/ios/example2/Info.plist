@@ -48,11 +48,11 @@
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
 	<key>VietMapURL</key>
-	<string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=0a55c0d9cf662edbf7c94db066e0ff16e17d5a9c4e565040</string>
+	<string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_API_KEY_HERE</string>
 	<key>VietMapAPIBaseURL</key>
 	<string>https://frt.map.zone/api/navigations/route/</string>
 	<key>VietMapAccessToken</key>
-	<string>0cd03613175a67f87567f86f0ba2f3b818e3a2b5f2c2634b</string>
+	<string>YOUR_API_KEY_HERE</string>
 	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
 	<string>Your request location description</string>
 	<key>NSLocationAlwaysUsageDescription</key>

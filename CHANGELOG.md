@@ -1,0 +1,137 @@
+# Changelog
+
+All notable changes to this project will be documented in this file.
+
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
+and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+
+## [1.5.0] - 2025-01-22
+
+### Added
+- **React 19.1.0 Support**: Full compatibility with React 19.1.0
+- **React Native 0.80.1 Support**: Updated to support React Native 0.80.1
+- **Configurable Base URL**: Added `baseUrl` prop to allow custom API endpoints
+  - Default value: `https://maps.vietmap.vn/api/navigations/route/`
+  - Can be overridden from React Native side
+- **Troubleshooting Section**: Added comprehensive troubleshooting guide in README
+  - Fix for iOS "Multiple commands produce Assets.car" error
+  - Clear step-by-step solutions with code examples
+
+### Changed
+- **Upgraded Dependencies**:
+  - React: 18.3.1 → 19.1.0
+  - React Native: 0.76.5 → 0.80.1
+  - TypeScript: Updated to 5.0.0
+- **Android Build System**:
+  - Android Gradle Plugin: 8.1.2 → 8.7.3
+  - Gradle Wrapper: 8.0/8.10.2 → 8.11.1
+  - Compile/Target SDK: 34 → 35
+- **TypeScript Configuration**:
+  - Target: ES6 → ES2020
+  - Added modern ES modules support
+  - Enhanced type safety options
+- **Compatibility Requirements**:
+  - React: >=18.0.0 (previously *)
+  - React Native: >=0.70.0 (previously *)
+
+### Fixed
+- **Kotlin Null Safety**: Fixed compilation errors with nullable ReadableMap objects
+- **Build Compatibility**: Resolved build issues with newer Android toolchain
+- **Package Namespace**: Fixed deprecated package attribute warnings
+
+### Technical Details
+- Updated peerDependencies to specify minimum supported versions
+- Enhanced error handling for null values in native modules
+- Improved documentation with clearer installation requirements
+- Added support for modern JavaScript features (ES2020)
+
+### Breaking Changes
+- Minimum React version is now 18.0.0
+- Minimum React Native version is now 0.70.0
+- Removed support for older Android build tools
+
+---
+
+## [1.4.0] - Previous Release
+
+### Features
+- Initial React Native navigation implementation
+- Turn-by-turn navigation for Vietnam
+- Support for multiple vehicle types (driving, cycling, walking, motorcycle)
+- Real-time traffic integration
+- Voice instructions
+- Route optimization
+
+---
+
+## Migration Guide from 1.4.0 to 1.5.0
+
+### For React < 18.0.0 users:
+```bash
+npm install react@^19.1.0 react-native@^0.80.1
+```
+
+### For Android developers:
+1. Update your `android/build.gradle`:
+   ```groovy
+   classpath "com.android.tools.build:gradle:8.7.3"
+   ```
+
+2. Update `android/gradle/wrapper/gradle-wrapper.properties`:
+   ```properties
+   distributionUrl=https\://services.gradle.org/distributions/gradle-8.11.1-all.zip
+   ```
+
+3. Update `android/app/build.gradle` if needed:
+   ```groovy
+   compileSdkVersion 35
+   targetSdkVersion 35
+   ```
+
+### For iOS developers:
+If you encounter "Multiple commands produce Assets.car" error, add the fix from the README troubleshooting section to your Podfile.
+
+### New Features Usage:
+```typescript
+// Using custom baseUrl
+<VietMapNavigation
+  baseUrl="https://your-custom-api.com/route/"
+  // ... other props
+/>
+```
+
+All notable changes to this project will be documented in this file.
+
+## [1.5.0] - 2025-07-22
+
+### Added
+- Support for React 19.1.0
+- Support for React Native 0.80.1
+- Troubleshooting section in README for common iOS build issues
+- TypeScript configuration improvements for modern ES versions
+
+### Changed
+- Updated minimum peerDependency versions:
+  - React: >=18.0.0 (tested up to 19.1.0)
+  - React Native: >=0.70.0 (tested up to 0.80.1)
+- Updated Android build tools to AGP 8.7.3
+- Updated compileSdkVersion and targetSdkVersion to 35
+- Enhanced TypeScript configuration with ES2020 target
+
+### Fixed
+- Added fix for iOS "Multiple commands produce Assets.car" build error
+- Improved compatibility with latest React Native versions
+
+### Documentation
+- Added troubleshooting guide for common iOS build issues
+- Updated installation requirements with clear compatibility information
+- Added step-by-step solution for Assets.car duplicate issue
+
+## [1.4.0] - Previous Release
+
+### Features
+- Turn-by-turn navigation for React Native
+- Support for multiple vehicle types (driving, cycling, motorcycle, walking)
+- Real-time navigation progress tracking
+- Voice instructions and banner instructions
+- Route overview and recenter functionality
