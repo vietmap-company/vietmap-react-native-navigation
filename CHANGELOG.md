@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.1] - 2025-09-12
+
+### Improved
+- **Speed Alert Performance**: Optimized speed alert reading and processing
+  - Enhanced SDK initialization timing to prevent configuration conflicts
+  - Improved vehicle configuration with proper type mapping (VehicleType.fromValue for Android, VMVehicleType.fromValue for iOS)
+  - Better error handling for uninitialized SDK states
+  - Automatic retry mechanism for alert API configuration when SDK becomes available
+- **Documentation**: Updated README with step-by-step speed alert configuration guide
+  - Clear instructions for configuring alert API credentials
+  - Comprehensive vehicle configuration examples
+  - Best practices for calling configuration methods in useEffect
+
 ## [1.6.0] - 2025-09-09
 
 ### Added

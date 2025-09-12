@@ -2068,11 +2068,11 @@ PODS:
     - Yoga
   - SocketRocket (0.7.1)
   - VietMap (2.0.0)
-  - vietmap-react-native-navigation (1.6.0):
+  - vietmap-react-native-navigation (1.6.1):
     - React-Core
     - VietMapCoreNavigation (= 3.1.0)
     - VietMapNavigation (= 3.1.3)
-    - VietmapTrackingSDK (= 1.0.6)
+    - VietmapTrackingSDK (= 1.1.5)
   - VietMapCoreNavigation (3.1.0):
     - VietMapDirections.swift (~> 2.0.1)
     - VietMapTurf (~> 1.0.2)
@@ -2086,7 +2086,7 @@ PODS:
   - VietMapPolyline (1.0.6)
   - VietMapSolar (1.0.3)
   - VietMapSpeech (2.0.1)
-  - VietmapTrackingSDK (1.0.6)
+  - VietmapTrackingSDK (1.1.5)
   - VietMapTurf (1.0.2)
   - Yoga (0.0.0)
 
@@ -2403,14 +2403,14 @@ SPEC CHECKSUMS:
   RNGestureHandler: 6f443b059572ab9b5444df158c0de8bda98aec2c
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   VietMap: 1fc4a1e27896a19bc8b8a62e2227b1e0116a698d
-  vietmap-react-native-navigation: e5a20ae8a435368517d39bb6f18954137b07c2c6
+  vietmap-react-native-navigation: 65346eb0fe80707252b4acd3d6fa4def640c6c97
   VietMapCoreNavigation: a5a6e2bed913c321abafca37286647b5b1dc52ed
   VietMapDirections.swift: d622c98e381281b39f7dcac2b0445ee2f6e1690e
   VietMapNavigation: 9b9322418f72d279c85640ef5353d20235cbbdc4
   VietMapPolyline: e599c6d0a0a4b3672957881e2f666ba2141a4e83
   VietMapSolar: ef412e72efb00b700f2223e701cae66b446bf17b
   VietMapSpeech: fe5bd0c2ed2757aa7ac59337d74480e25e5a36ed
-  VietmapTrackingSDK: bc894e475d2b9334bccd0c49f2e047d7426a7928
+  VietmapTrackingSDK: 00006e41939955712e51a333c409cc6e504ca127
   VietMapTurf: 323ba165ae0aeb0fb6622d427e5341c14f4afada
   Yoga: daa1e4de4b971b977b23bc842aaa3e135324f1f3
 
