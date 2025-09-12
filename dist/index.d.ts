@@ -5,5 +5,5 @@ export * from './models/route_progress_data';
 export { VietMapNavigationModule } from './native_modules';
 export * from './models/coordinates';
 export * from './typings';
-export { VietMapNavigationController } from './controller';
+export { VietMapNavigationController, VehicleType } from './controller';
 export default VietMapNavigation;

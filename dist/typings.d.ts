@@ -35,6 +35,8 @@ interface MilestoneData {
 export interface IVietMapNavigationProps {
     baseUrl?: string;
     apiKey: string;
+    apiKeyAlert?: string;
+    apiIDAlert?: string;
     shouldSimulateRoute?: boolean;
     initialLatLngZoom?: InitialLatLngZoom;
     navigationZoomLevel?: number;
