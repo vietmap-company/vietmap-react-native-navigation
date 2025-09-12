@@ -8,6 +8,7 @@ import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableNativeArray
+import com.facebook.react.bridge.Promise
 import vn.vietmap.model.VietmapReactNativeEvent
 
 
@@ -24,12 +25,6 @@ class VietMapNavigationModule(reactContext: ReactApplicationContext) : ReactCont
     override fun getName(): String {
         return "VietMapNavigationModule"
     }
-
-    @ReactMethod
-    fun testModule() {
-        Log.d("VietMapNavigationModule", "Module is working correctly!")
-    }
-
 
     private fun sendEvent(eventName: VietmapReactNativeEvent, eventData: Any?) {
         Log.d(eventName.name, "Sent event")
@@ -118,5 +113,38 @@ class VietMapNavigationModule(reactContext: ReactApplicationContext) : ReactCont
     @ReactMethod
     fun overView() {
         sendEvent(VietmapReactNativeEvent.OVERVIEW, null)
+    }
+
+    @ReactMethod
+    fun startSpeedAlert() {
+        VietMapNavigationView.instance?.startSpeedAlert()
+    }
+
+    @ReactMethod
+    fun stopSpeedAlert() {
+        VietMapNavigationView.instance?.stopSpeedAlert()
+    }
+
+    @ReactMethod
+    fun isSpeedAlertActive(promise: Promise) {
+        try {
+            val isActive = VietMapNavigationView.instance?.isSpeedAlertActive() ?: false
+            promise.resolve(isActive)
+        } catch (e: Exception) {
+            promise.reject("ERROR", "Failed to check speed alert status", e)
+        }
+    }
+
+    @ReactMethod
+    fun configureAlertAPI(apiKey: String, apiID: String) {
+        VietMapNavigationView.instance?.let { view ->
+            view.setApiKeyAlert(apiKey)
+            view.setApiIDAlert(apiID)
+        }
+    }
+
+    @ReactMethod
+    fun configVehicleSpeedAlert(vehicleId: String, vehicleType: Int, seats: Int, weight: Double) {
+        VietMapNavigationView.instance?.configVehicleSpeedAlert(vehicleId, vehicleType, seats, weight)
     }
 }

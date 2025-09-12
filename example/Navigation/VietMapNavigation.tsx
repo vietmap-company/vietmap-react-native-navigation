@@ -1,9 +1,10 @@
 /* eslint-disable comma-dangle */
 // import React from 'react';
-import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity } from 'react-native';
-import VietMapNavigation, { NavigationProgressData } from '../../src';
+import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity, Platform, PermissionsAndroid } from 'react-native';
+import VietMapNavigation, { NavigationProgressData, VehicleType } from '../../src';
 import { VietMapNavigationController } from '../../src';
 import React, { useEffect, useState } from 'react';
+import Geolocation from '@react-native-community/geolocation';
 
 import { Icon } from 'react-native-elements';
 import Images from './img/index';
@@ -89,6 +90,56 @@ const VietMapNavigationScreen = () => {
     return f.format(time);
   }
 
+  const requestLocationPermission = async (): Promise<boolean> => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'App needs access to location for navigation',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn('Permission error:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions automatically
+  };
+
+  const getCurrentLocation = (): Promise<{lat: number, long: number}> => {
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            long: position.coords.longitude
+          };
+          setCurrentLocation(location);
+          resolve(location);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to default location when error occurs
+          const defaultLocation = { lat: 10.704619, long: 106.800106 };
+          setCurrentLocation(defaultLocation);
+          console.log('Using default location:', defaultLocation);
+          resolve(defaultLocation);
+        },
+        { 
+          enableHighAccuracy: false, // Changed to false for faster response
+          timeout: 20000, // Increased timeout to 20 seconds
+          maximumAge: 30000 // Allow cached location up to 30 seconds
+        }
+      );
+    });
+  }
+
   const [instructionText, setInstructionText] = useState<string>("");
   const [routeProgressData, setRouteProgressData] = useState<NavigationProgressData | null>(null);
   const [guideText, setGuideText] = useState<string>("");
@@ -99,6 +150,56 @@ const VietMapNavigationScreen = () => {
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState<string>("");
   const [timeArriveRemaining, setTimeArriveRemaining] = useState<string>("");
   const [guideKey, setGuideKey] = useState<string>("");
+  const [currentLocation, setCurrentLocation] = useState<{lat: number, long: number}>({
+    lat: 10.704619, 
+    long: 106.800106
+  });
+
+  // Watch position to continuously update location
+  useEffect(() => {
+    let watchId: number;
+
+    const startLocationWatch = async () => {
+      const hasPermission = await requestLocationPermission();
+      if (hasPermission) {
+        watchId = Geolocation.watchPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude,
+            };
+            setCurrentLocation(location);
+            console.log('Location updated via watch:', location);
+          },
+          (error) => {
+            console.error('Error watching location:', error);
+          },
+          {
+            enableHighAccuracy: false,
+            distanceFilter: 10, // Update when moved 10 meters
+            interval: 5000, // Update every 5 seconds
+          }
+        );
+      } else {
+        console.log('Location permission denied');
+      }
+    };
+
+    startLocationWatch();
+
+    return () => {
+      if (watchId) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
+  // Get initial location
+  useEffect(() => {
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE")
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+    getCurrentLocation();
+  }, []);
 
   const [isNavigationInprogress, setIsNavigationInprogress] = useState<boolean>(false);
   const startNavigation = routeData != null && !isNavigationInprogress ? (
@@ -320,44 +421,17 @@ const VietMapNavigationScreen = () => {
           onMapClick={(event) => {
             console.log('onMapClick', event.nativeEvent.data.latitude);
           }}
-          onMapLongClick={(event) => {
-            console.log('onMapLongClickzz', event.nativeEvent.data.latitude);
-            // VietMapNavigationController.buildRoute(
-            //   [
-            //     {
-            //       lat:10.765254,long: 106.671071
-            //     },
-            //     {
-            //       lat:10.768914,long: 106.661347
-            //     },
-            //     {
-            //       lat:10.759450,long: 106.657576
-            //     },
-            //     {
-            //       lat:10.753640,long: 106.670890
-            //     },
-            //     {
-            //       lat: 10.750017,long: 106.660938
-            //     },
-            //   ],
-            //   'motorcycle'
-            // )
-            // Get current location
-
-            // VietMapNavigationController.buildRoute([
-            //   {
-            //     lat: 10.759118013383382, long:106.675830658235
-            //   },
-            //   {
-            //     lat:event.nativeEvent.data.latitude, long:event.nativeEvent.data.longitude
-            //   },],
-            //   'motorcycle'
-            // )
+          onMapLongClick={async (event) => {
+            console.log('onMapLongClick', event.nativeEvent.data);
             VietMapNavigationController.buildRoute([
-              { lat: 10.798447, long: 106.669681 }, {
-                lat: 10.81060614701359, long: 106.66920074577318
-              }],
-              'motorcycle');
+              {
+                lat: 10.801674700004174, long: 106.63660027352597
+              },
+              {
+                lat: event.nativeEvent.data.latitude, 
+                long: event.nativeEvent.data.longitude
+              }
+            ], 'motorcycle');
           }}
           onCancelNavigation={() => {
             setIsNavigationInprogress(false)

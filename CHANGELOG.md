@@ -5,6 +5,40 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0] - 2025-09-09
+
+### Added
+- **Speed Alert System**: Complete speed alert functionality with voice warnings and status monitoring
+  - New `VietMapNavigationController.startSpeedAlert()` to enable speed limit warnings
+  - New `VietMapNavigationController.stopSpeedAlert()` to disable speed limit warnings
+  - New `VietMapNavigationController.isSpeedAlertActive()` returns Promise<boolean> for status checking
+  - Cross-platform voice alert support for speed limit violations
+  - Real-time speed monitoring with audio warnings when exceeding speed limits
+  - Automatic speed limit detection from map data
+- **Speed Alert Status Check**: Added real-time speed alert status monitoring
+  - Cross-platform support for Android and iOS
+  - Android implementation uses `speedAlertManager.isSpeedAlertActive()`
+  - iOS implementation uses `trackingSDK.isSpeedAlertCurrentlyActive()`
+  - Added TypeScript interface with proper Promise<boolean> return type
+  - Comprehensive error handling for both platforms
+
+### Improved
+- **Speed Alert API**: Enhanced speed alert functionality with comprehensive control
+  - Voice warning system for speed limit violations
+  - Better state management for speed alert features
+  - Real-time status checking capability for UI state synchronization
+  - Automatic speed limit reading from navigation data
+  - Background location support for continuous monitoring
+  - Added usage examples and documentation in README.md
+- **iOS Configuration**: Enhanced iOS setup requirements for speed alert functionality
+  - Added UIBackgroundModes location requirement for continuous monitoring
+  - Improved location permission handling for speed alert features
+- **Documentation**: Updated README.md with complete speed alert API documentation
+  - Added comprehensive speed alert usage examples
+  - Included async/await patterns and error handling examples
+  - Enhanced iOS configuration requirements for UIBackgroundModes
+  - Added speed limit warning system documentation
+
 ## [1.5.1] - 2025-07-22
 
 ### Fixed

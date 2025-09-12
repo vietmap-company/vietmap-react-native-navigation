@@ -61,7 +61,7 @@ Add below code to AndroidManifest (for android 14 and above).
 ### iOS Specific Instructions
  
 Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** with your API key.
-```ruby
+```xml
   <key>VietMapURL</key>
   <string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_API_KEY_HERE</string>
   <key>VietMapAPIBaseURL</key>
@@ -74,6 +74,14 @@ Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** 
   <string>Your request location description</string>
   <key>NSLocationWhenInUseUsageDescription</key>
   <string>Your request location description</string>
+```
+
+**For Speed Alert feature:** Add background location mode to Info.plist if you want to use speed alert functionality:
+```xml
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>location</string>
+  </array>
 ```
 
 Add the below code to `Podfile`
@@ -295,6 +303,167 @@ The SDK will automatically stop the navigation when user arrival at the last way
 This function will call while user select a new route, cause VietMap SDK will find one or more route between two points. When user select new route, the `RouteData` will response.
 
 
+### Speed Alert API
+
+You can control the speed alert feature using the following methods from `VietMapNavigationController`:
+
+#### Step 1: Configure Speed Alert API
+
+Before using speed alert features, you need to configure the API with your credentials. **Important: These configurations should be called in `useEffect` to ensure proper initialization:**
+
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Configure speed alert API with your credentials
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+  }, []);
+
+  return (
+    // Your navigation component JSX
+  );
+};
+```
+
+**Parameters:**
+- `apiKey`: Your VietMap API key for speed alert service
+- `apiKeyId`: Your VietMap API key ID for speed alert service
+
+#### Step 2: Configure Vehicle Information
+
+Configure the vehicle information for accurate speed alert calculations. **This should also be called in `useEffect` along with Step 1:**
+
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController, VehicleType } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Step 1: Configure speed alert API
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+    
+    // Step 2: Configure vehicle for speed alert
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+  }, []);
+
+  return (
+    // Your navigation component JSX
+  );
+};
+```
+
+**Parameters:**
+- `vehicleId`: Unique identifier for the vehicle (string)
+- `vehicleType`: Type of vehicle using `VehicleType` enum:
+  - `VehicleType.car` - Xe ô tô
+  - `VehicleType.taxi` - Xe taxi  
+  - `VehicleType.bus` - Xe bus
+  - `VehicleType.coach` - Xe khách
+  - `VehicleType.truck` - Xe tải
+  - `VehicleType.trailer` - Xe remooc
+  - `VehicleType.cycle` - Xe mô tô
+  - `VehicleType.bike` - Xe đạp
+  - `VehicleType.pedestrian` - Người đi bộ
+  - `VehicleType.semiTrailer` - Xe sơ mi rơ moóc
+- `seats`: Number of seats in the vehicle
+- `weight`: Vehicle weight in kg
+
+**Complete Example:**
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController, VehicleType } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Step 1: Configure speed alert API with your credentials
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+    
+    // Step 2: Configure vehicle - Example: truck with 5 seats and 1500kg weight
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+  }, []);
+
+  return (
+    // Your VietMapNavigation component here
+  );
+};
+```
+
+> **Important Notes:**
+> - Both `configureAlertAPI` and `configVehicleSpeedAlert` must be called in `useEffect` to ensure proper initialization
+> - Call these functions before using any speed alert features
+> - These configurations are typically called once when the component mounts
+```
+
+#### Start Speed Alert
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Start speed alert manually
+VietMapNavigationController.startSpeedAlert();
+```
+
+**Speed Alert Behavior:**
+
+- **Automatic Mode (During Navigation)**: When you start navigation, speed alert will automatically run and will automatically stop when navigation ends. You don't need to manually call `startSpeedAlert()` during navigation.
+
+- **Manual Mode (Without Navigation)**: If you call `startSpeedAlert()` manually, speed alert will run even when not in navigation mode. This is useful for:
+  - Speed monitoring during free-drive mode
+  - Testing speed alert functionality
+  - Custom speed monitoring scenarios outside of navigation
+
+**Important Notes:**
+- Manual speed alert will continue running until you explicitly call `stopSpeedAlert()` or start a navigation session
+- During navigation, the system automatically manages speed alert lifecycle
+- You can check if speed alert is currently active using `isSpeedAlertActive()`
+
+#### Stop Speed Alert
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Stop speed alert
+VietMapNavigationController.stopSpeedAlert();
+```
+
+#### Check Speed Alert Status
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Check if speed alert is currently active
+const isActive = await VietMapNavigationController.isSpeedAlertActive();
+console.log('Speed alert is active:', isActive);
+
+// You can also use it in an async function
+const checkSpeedAlertStatus = async () => {
+  try {
+    const isActive = await VietMapNavigationController.isSpeedAlertActive();
+    if (isActive) {
+      console.log('Speed alert is currently running');
+    } else {
+      console.log('Speed alert is not active');
+    }
+  } catch (error) {
+    console.error('Error checking speed alert status:', error);
+  }
+};
+```
+
+> **Note:**
+> - You should call these methods after the map is ready (e.g. in a button or in the `onMapReady` callback).
+> - On Android and iOS, these methods will start/stop the SDK's speed alert system (voice, UI, or notification depending on platform).
+> - **iOS Requirement:** For speed alert to work properly on iOS, you must add `UIBackgroundModes` with `location` to your Info.plist file:
+> ```xml
+> <key>UIBackgroundModes</key>
+> <array>
+>   <string>location</string>
+> </array>
+> ```
+
+---
 
 ### Add a controller to control the navigation progress
 

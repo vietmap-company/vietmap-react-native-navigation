@@ -27,21 +27,6 @@ const App = () => {
   };
 
   useEffect(() => {
-    // Test native module
-    const testNativeModule = () => {
-      if (VietMapNavigationModule) {
-        console.log('Testing VietMapNavigationModule...');
-        try {
-          VietMapNavigationModule.testModule();
-          console.log('VietMapNavigationModule test successful!');
-        } catch (error) {
-          console.error('VietMapNavigationModule test failed:', error);
-        }
-      } else {
-        console.error('VietMapNavigationModule is not available');
-      }
-    };
-
     const requestLocationPermission = async () => {
       try {
         await PermissionsAndroid.request(

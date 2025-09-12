@@ -97,6 +97,12 @@ import vn.vietmap.vietmapsdk.style.layers.PropertyFactory.lineJoin
 import vn.vietmap.vietmapsdk.style.layers.PropertyFactory.lineWidth
 import vn.vietmap.vietmapsdk.style.layers.SymbolLayer
 import vn.vietmap.vietmapsdk.style.sources.GeoJsonSource
+import com.vietmap.trackingsdk.VietmapTrackingSDK
+import com.vietmap.trackingsdk.VietmapSpeedAlertManager
+import com.vietmap.trackingsdk.TrackingConfig
+import com.vietmap.trackingsdk.VMLocation
+import com.vietmap.trackingsdk.RouteData
+import com.vietmap.trackingsdk.VehicleType
 import kotlin.math.PI
 import kotlin.math.cos
 import kotlin.math.sin
@@ -140,6 +146,15 @@ class VietMapNavigationView(
     private var routeUtils = RouteUtils()
     private val snapEngine = SnapToRoute()
     private var apikey: String? = null
+    private var apiKeyAlert: String? = null
+    private var apiIDAlert: String? = null
+    
+    // Vehicle configuration variables
+    private var pendingVehicleId: String? = null
+    private var pendingVehicleType: Int? = null
+    private var pendingVehicleSeats: Int? = null
+    private var pendingVehicleWeight: Double? = null
+    
     private var baseUrl: String = "https://maps.vietmap.vn/api/navigations/route/"
     private var speechPlayer: SpeechPlayer? = null
     private var routeProgress: RouteProgress? = null
@@ -163,6 +178,9 @@ class VietMapNavigationView(
         NavigationViewBinding.inflate(LayoutInflater.from(context), this, true)
 
     private lateinit var vietMapGL: VietMapGL
+    private lateinit var vietmapSDK: VietmapTrackingSDK
+
+    private var restartAlert = false
 
 
     override fun onAttachedToWindow() {
@@ -186,6 +204,7 @@ class VietMapNavigationView(
     }
 
     companion object {
+        private const val TAG = "VietMapNavigationView"
         var instance: VietMapNavigationView? = null
 
         //Config
@@ -288,6 +307,21 @@ class VietMapNavigationView(
 
             }
         }
+        
+        // Initialize SDK sau khi map ready
+        initializeSDK()
+    }
+
+    private fun initializeSDK() {
+        // Initialize SDK
+        vietmapSDK = VietmapTrackingSDK.getInstance(context)
+        vietmapSDK.initialize("VIETMAP_ALERT")
+        
+        // Gọi configureAlertAPI nếu apiKeyAlert và apiIDAlert đã được set trước đó
+        configureAlertAPI()
+        
+        // Gọi configureVehicle nếu vehicle info đã được set trước đó
+        configureVehicle()
     }
 
     private fun startRoute(points: ReadableArray, profile: String) {
@@ -441,6 +475,45 @@ class VietMapNavigationView(
     fun setApiKey(apiKey: String) {
         this.apikey = apiKey
         mapStyleURL = "https://maps.vietmap.vn/api/maps/light/styles.json?apikey=$apiKey"
+    }
+
+    fun setApiKeyAlert(apiKeyAlert: String) {
+        this.apiKeyAlert = apiKeyAlert
+        configureAlertAPI()
+    }
+
+    fun setApiIDAlert(apiIDAlert: String) {
+        this.apiIDAlert = apiIDAlert
+        configureAlertAPI()
+    }
+
+    private fun configureAlertAPI() {        
+        if (::vietmapSDK.isInitialized && apiKeyAlert != null && apiIDAlert != null) {
+            try {
+                vietmapSDK.configureAlertAPI(apiKeyAlert!!, apiIDAlert!!)
+            } catch (e: Exception) {
+                Log.e("VietmapSpeedAlert", "Error configuring Alert API", e)
+            }
+        } else {
+            Log.d("VietmapSpeedAlert", "Cannot configure Alert API - SDK not initialized or missing credentials")
+        }
+    }
+
+    private fun configureVehicle() {
+        if (::vietmapSDK.isInitialized && 
+            pendingVehicleId != null && 
+            pendingVehicleType != null && 
+            pendingVehicleSeats != null && 
+            pendingVehicleWeight != null) {
+            try {
+                val vehicleTypeEnum = VehicleType.fromValue(pendingVehicleType!!)
+                vietmapSDK.configureVehicle(pendingVehicleId!!, vehicleTypeEnum, pendingVehicleSeats!!, pendingVehicleWeight!!)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error configuring vehicle", e)
+            }
+        } else {
+            Log.d(TAG, "Cannot configure vehicle - SDK not initialized or missing vehicle data")
+        }
     }
 
     fun setMute(mute: Boolean) {
@@ -846,6 +919,13 @@ class VietMapNavigationView(
                 navigation?.removeNavigationEventListener(this)
                 navigation?.removeOffRouteListener(this)
                 navigation?.removeProgressChangeListener(this)
+                
+                if (restartAlert) {
+                    // Nếu có cảnh báo tốc độ đang tạm dừng thì khởi động lại
+                    val speedAlertManager = vietmapSDK.speedAlertManager
+                    speedAlertManager.startSpeedAlerts()
+                    restartAlert = false
+                }
             }
 
         }
@@ -889,6 +969,16 @@ class VietMapNavigationView(
                     if (!isDisposed && !isBuildingRoute) {
                         val snappedLocation: Location =
                             snapEngine.getSnappedLocation(location, routeProgress)
+                        // Xử lý cảnh báo tốc độ
+                        val speedAlertManager = vietmapSDK.speedAlertManager
+                        if (speedAlertManager.isSpeedAlertActive()) {
+                            // Stop alert trước khi xử lý
+                            speedAlertManager.stopSpeedAlerts()
+                            restartAlert = true
+                        }
+                        Log.d("VietmapSpeedAlert", "Current location: ${snappedLocation.latitude}, ${snappedLocation.longitude}")
+                        // Xử lý location
+                        speedAlertManager.processExternalLocation(snappedLocation.latitude, snappedLocation.longitude, currentSpeed.toDouble(), snappedLocation.bearing.toDouble())
 
                         val progressEvent =
                             VietMapRouteProgressEvent(routeProgress, location, snappedLocation)
@@ -1112,11 +1202,25 @@ class VietMapNavigationView(
         sendEvent(VietMapEvents.NAVIGATION_CANCELLED)
         navigation?.stopNavigation()
         isRunning = false
+        
+        if (restartAlert) {
+            // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
+            val speedAlertManager = vietmapSDK.speedAlertManager
+            speedAlertManager.startSpeedAlerts()
+            restartAlert = false
+        }
     }
 
     override fun onNavigationFinished() {
         vietMapGL.locationComponent.locationEngine = locationEngine
         sendEvent(VietMapEvents.NAVIGATION_FINISHED)
+        
+        if (restartAlert) {
+            // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
+            val speedAlertManager = vietmapSDK.speedAlertManager
+            speedAlertManager.startSpeedAlerts()
+            restartAlert = false
+        }
     }
 
     override fun onNavigationRunning() {
@@ -1333,6 +1437,49 @@ class VietMapNavigationView(
             .receiveEvent(id, "onRouteProgressChange", writableMap)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
+    fun startSpeedAlert() {
+        // Check permissions for GPS mode (always starts with GPS)
+        if (!vietmapSDK.hasLocationPermissions()) {
+            checkPermissions()
+            return
+        }
+
+        // Get speed alert manager and start with GPS mode (simplified)
+        val speedAlertManager = vietmapSDK.speedAlertManager
+        speedAlertManager.startSpeedAlerts() // Always starts with GPS
+        sendEvent(VietMapEvents.START_ALERT)
+    }
+
+    fun stopSpeedAlert() {
+        val speedAlertManager = vietmapSDK.speedAlertManager
+        speedAlertManager.stopSpeedAlerts()
+        restartAlert = false
+        sendEvent(VietMapEvents.STOP_ALERT)
+    }
+
+    fun isSpeedAlertActive(): Boolean {
+        return try {
+            val speedAlertManager = vietmapSDK.speedAlertManager
+            speedAlertManager.isSpeedAlertActive()
+        } catch (e: Exception) {
+            false
+        }
+    }
+
+    fun configVehicleSpeedAlert(vehicleId: String, vehicleType: Int, seats: Int, weight: Double) {
+        // Store vehicle configuration parameters
+        pendingVehicleId = vehicleId
+        pendingVehicleType = vehicleType
+        pendingVehicleSeats = seats
+        pendingVehicleWeight = weight
+        
+        Log.d(TAG, "Storing vehicle config: ID=$vehicleId, Type=$vehicleType, Seats=$seats, Weight=$weight")
+        
+        // Try to configure immediately if SDK is initialized
+        configureVehicle()
+    }
+
     private fun sendEvent(eventName: VietMapEvents, data: JSONObject? = null) {
 
         val writableMap = Arguments.createMap()
@@ -1348,5 +1495,18 @@ class VietMapNavigationView(
 
     fun setBaseUrl(baseUrl: String) {
         this.baseUrl = baseUrl
+    }
+
+    private fun checkPermissions() {
+        context.currentActivity?.let { activity ->
+            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) 
+                != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                    activity,
+                    arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                    1001
+                )
+            }
+        }
     }
 }

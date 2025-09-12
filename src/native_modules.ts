@@ -1,7 +1,6 @@
 import {NativeModules} from 'react-native';
 
 interface VietMapNavigationModuleType {
-  testModule: () => void;
   buildRoute: (points: any[], vehicle?: string) => void;
   startNavigation: () => void;
   stopNavigation: () => void;
@@ -11,6 +10,11 @@ interface VietMapNavigationModuleType {
   finishNavigation: () => void;
   overView: () => void;
   clearRoute: () => void;
+  startSpeedAlert: () => void;
+  stopSpeedAlert: () => void;
+  isSpeedAlertActive: () => Promise<boolean>;
+  configureAlertAPI: (apiKey: string, apiID: string) => void;
+  configVehicleSpeedAlert: (vehicleId: string, vehicleType: number, seats: number, weight: number) => void;
 }
 
 export const VietMapNavigationModule: VietMapNavigationModuleType = NativeModules.VietMapNavigationModule;

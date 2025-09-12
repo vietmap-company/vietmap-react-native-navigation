@@ -53,4 +53,46 @@ class VietMapNavigationModule: NSObject {
             map.recenter()
         }
     }
+    
+    @objc
+    func startSpeedAlert() {
+        DispatchQueue.main.async {
+            let map = VietMapNavigationView.shared
+            map.startSpeedAlert()
+        }
+    }
+    
+    @objc
+    func stopSpeedAlert() {
+        DispatchQueue.main.async {
+            let map = VietMapNavigationView.shared
+            map.stopSpeedAlert()
+        }
+    }
+    
+    @objc
+    func isSpeedAlertActive(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) {
+        DispatchQueue.main.async {
+            let map = VietMapNavigationView.shared
+            let isActive = map.isSpeedAlertActive()
+            resolve(isActive)
+        }
+    }
+    
+    @objc
+    func configureAlertAPI(_ apiKey: String, apiID: String) {
+        DispatchQueue.main.async {
+            let map = VietMapNavigationView.shared
+            map.apiKeyAlert = apiKey
+            map.apiIDAlert = apiID
+        }
+    }
+    
+    @objc
+    func configVehicleSpeedAlert(_ vehicleId: String, vehicleType: Int, seats: Int, weight: Double) {
+        DispatchQueue.main.async {
+            let map = VietMapNavigationView.shared
+            map.configVehicleSpeedAlert(vehicleId: vehicleId, vehicleType: vehicleType, seats: seats, weight: weight)
+        }
+    }
 }

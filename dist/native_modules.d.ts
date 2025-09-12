@@ -1,5 +1,4 @@
 interface VietMapNavigationModuleType {
-    testModule: () => void;
     buildRoute: (points: any[], vehicle?: string) => void;
     startNavigation: () => void;
     stopNavigation: () => void;

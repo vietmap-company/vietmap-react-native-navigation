@@ -3,6 +3,7 @@ import UIKit
 import VietMapDirections
 import VietMapNavigation
 import VietMapCoreNavigation
+import VietmapTrackingSDK
 
 private typealias RouteRequestSuccess = (([Route]) -> Void)
 private typealias RouteRequestFailure = ((NSError) -> Void)
@@ -56,6 +57,16 @@ extension UIView {
     @objc var initialLatLngZoom: NSDictionary = [:]
     @objc var navigationPadding: NSDictionary = [:]
     @objc var navigationZoomLevel: Double = 10
+    @objc var apiKeyAlert: String? {
+        didSet {
+            configureAlertAPIIfNeeded()
+        }
+    }
+    @objc var apiIDAlert: String? {
+        didSet {
+            configureAlertAPIIfNeeded()
+        }
+    }
     
     // MARK: - define Event Block from RN
     @objc var onRouteProgressChange: RCTDirectEventBlock?
@@ -70,11 +81,23 @@ extension UIView {
     @objc var onMapMove: RCTDirectEventBlock?
     @objc var onMapMoveEnd: RCTDirectEventBlock?
     @objc var onNewRouteSelected: RCTDirectEventBlock?
+    @objc var startAlert: RCTDirectEventBlock?
+    @objc var stopAlert: RCTDirectEventBlock?
+
+    private var trackingSDK: VietmapTrackingManager?
+    var restartAlert: Bool = false
+    
+    // Vehicle configuration properties
+    private var vehicleType: Int = 1  // Default vehicle type
+    private var seats: Int = 4        // Default seats
+    private var weights: Float = 1500 // Default weight
+    private let maxProvision: Int = 1000 // Fixed maxProvision value
     
     override init(frame: CGRect) {
         self.embedded = false
         self.embedding = false
         super.init(frame: frame)
+        setupTrackingSDK()
     }
     
     required init?(coder aDecoder: NSCoder) {
@@ -126,7 +149,11 @@ extension UIView {
             navigationMapView.tracksUserCourse = false
             suspendNotifications()
             sendEvent(event: onNavigationFinished)
-            
+            if (restartAlert) {
+                // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
+                startSpeedAlert()
+                restartAlert = false
+            }
             UIApplication.shared.isIdleTimerDisabled = false
         }
     }
@@ -155,6 +182,86 @@ extension UIView {
     func recenter() {
         guard let navigationMapView = self.navigationMapView else {return}
         navigationMapView.recenterMap()
+    }
+    
+    @objc
+    func startSpeedAlert() {
+        guard let trackingSDK = trackingSDK else { return }
+        
+        // Use simple turnOnAlert without location mode for now
+        trackingSDK.turnOnAlert() { [weak self] (success: Bool) in
+            DispatchQueue.main.async {
+                if success {
+                    self?.sendEvent(event: self?.startAlert)
+                } else {
+                    
+                }
+            }
+        }
+    }
+    
+    @objc
+    func stopSpeedAlert() {
+        guard let trackingSDK = trackingSDK else { return }
+        
+        trackingSDK.turnOffAlert { [weak self] success in
+            DispatchQueue.main.async {
+                if success {
+                    self?.sendEvent(event: self?.stopAlert)
+                } else {
+                    
+                }
+            }
+        }
+    }
+    
+    @objc
+    func isSpeedAlertActive() -> Bool {
+        guard let trackingSDK = trackingSDK else { return false }
+        return trackingSDK.isSpeedAlertCurrentlyActive()
+    }
+    
+    private func configureAlertAPIIfNeeded() {
+        guard let trackingSDK = trackingSDK,
+              let apiKeyAlert = apiKeyAlert,
+              let apiIDAlert = apiIDAlert else { return }
+        
+        trackingSDK.configureAlertAPI(
+            apiKey: apiKeyAlert,
+            apiID: apiIDAlert,
+            url: "https://drive-api.vietmap.vn/fleetwork/api/Alert/v2/mpp"
+        )
+    }
+    
+    @objc
+    func configVehicleSpeedAlert(vehicleId: String, vehicleType: Int, seats: Int, weight: Double) {
+        // Configure vehicle for speed alert with maxProvision defaulted to 1000
+        guard let trackingSDK = trackingSDK else { return }
+        
+        // Use VMVehicleType.fromValue() to convert Int to VMVehicleType enum
+        let vehicleTypeEnum = VMVehicleType.fromValue(vehicleType)
+        
+        print("setup configVehicleSpeedAlert \(vehicleId) \(vehicleTypeEnum) \(seats) \(weight)")
+        
+        // Call the SDK method with maxProvision set to default 1000
+        trackingSDK.configureVehicleWithType(
+           vehicleId: vehicleId,
+           vehicleType: vehicleTypeEnum,
+           seats: seats,
+           weight: Double(weight)
+        )
+        
+        // Store vehicle configuration for later use if needed
+        self.vehicleType = vehicleType
+        self.seats = seats
+        self.weights = Float(weight)
+    }
+    
+    private func setupTrackingSDK() {
+        trackingSDK = VietmapTrackingManager.shared
+        
+        // Try to configure with custom values if available
+        configureAlertAPIIfNeeded()
     }
 
     // MARK: - sub function Event RN
@@ -200,7 +307,14 @@ extension UIView {
         } else {
             navigationMapView.removeArrow()
         }
+         if (trackingSDK?.isSpeedAlertCurrentlyActive() == true) {
+            // Stop alert trước khi xử lý
+            stopSpeedAlert()
+            restartAlert = true
+        }
         navigationMapView.updateCourseTracking(location: location, camera: camera, animated: false)
+        // Handle alert
+        trackingSDK?.processExternalLocation(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, speed: location.speed, heading: location.course)
         sendEvent(event: onRouteProgressChange, data: encodeRouteProgressChange(routeProgress: routeProgress,location:location,rawLocation:rawLocation))
     }
     
@@ -395,6 +509,11 @@ extension VietMapNavigationView: RouteControllerDelegate {
             "longitude": waypoint.coordinate.longitude
         ]
         sendEvent(event: onArrival, data:arrivalData)
+        if (restartAlert) {
+            // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
+            startSpeedAlert()
+            restartAlert = false
+        }
         if(_remainingPointCount == 1)
         {
             suspendNotifications()
@@ -412,6 +531,11 @@ extension VietMapNavigationView: RouteControllerDelegate {
         {
             UIApplication.shared.isIdleTimerDisabled = false
             sendEvent(event: onNavigationFinished)
+            if (restartAlert) {
+                // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
+                startSpeedAlert()
+                restartAlert = false
+            }
         }
     }
 }

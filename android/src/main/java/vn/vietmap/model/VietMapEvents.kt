@@ -29,5 +29,7 @@ enum class VietMapEvents(val value: String) {
     ON_NEW_ROUTE_SELECTED("onNewRouteSelected"),
     CAMERA_ON_MOVE("cameraOnMove"),
     MARKER_CLICKED("markerClicked"),
+    START_ALERT("startAlert"),
+    STOP_ALERT("stopAlert"),
 
 }

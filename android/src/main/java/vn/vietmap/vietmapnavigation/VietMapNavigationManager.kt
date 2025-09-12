@@ -63,7 +63,9 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
             "onMapRendered" to MapBuilder.of("registrationName", "onMapRendered"),
             "onNewRouteSelected" to MapBuilder.of("registrationName", "onNewRouteSelected"),
             "cameraOnMove" to MapBuilder.of("registrationName", "cameraOnMove"),
-            "markerClicked" to MapBuilder.of("registrationName", "markerClicked")
+            "markerClicked" to MapBuilder.of("registrationName", "markerClicked"),
+            "startAlert" to MapBuilder.of("registrationName", "startAlert"),
+            "stopAlert" to MapBuilder.of("registrationName", "stopAlert")
         )
     }
 
@@ -105,6 +107,20 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
     @ReactProp(name = "shouldSimulateRoute")
     fun setShouldSimulateRoute(view: VietMapNavigationView, shouldSimulateRoute: Boolean) {
         view.setShouldSimulateRoute(shouldSimulateRoute)
+    }
+
+    @ReactProp(name = "apiKeyAlert")
+    fun setApiKeyAlert(view: VietMapNavigationView, apiKeyAlert: String?) {
+        if (apiKeyAlert != null) {
+            view.setApiKeyAlert(apiKeyAlert)
+        }
+    }
+
+    @ReactProp(name = "apiIDAlert")
+    fun setApiIDAlert(view: VietMapNavigationView, apiIDAlert: String?) {
+        if (apiIDAlert != null) {
+            view.setApiIDAlert(apiIDAlert)
+        }
     }
 
 

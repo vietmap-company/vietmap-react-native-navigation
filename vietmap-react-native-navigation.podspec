@@ -48,6 +48,7 @@ Pod::Spec.new do |s|
   s.dependency "React-Core"
   s.dependency 'VietMapNavigation', '3.1.3'
   s.dependency 'VietMapCoreNavigation', '3.1.0'
+  s.dependency 'VietmapTrackingSDK', '1.0.5'
   s.platform = :ios, '12.0'
   s.swift_version = '5.0'
 end

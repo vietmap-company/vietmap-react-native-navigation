@@ -17,6 +17,9 @@ end
 target 'example2' do
   config = use_native_modules!
 
+  # Thêm module manual
+  pod 'vietmap-react-native-navigation', :path => '../..'
+
   use_react_native!(
     :path => config[:reactNativePath],
     # An absolute path to your application root.
@@ -24,9 +27,9 @@ target 'example2' do
     :hermes_enabled => false
   )
 
-  pre_install do |installer|
-    $RNMBNAV.pre_install(installer)
-  end
+  # pre_install do |installer|
+  #   $RNMBNAV.pre_install(installer)
+  # end
   target 'example2Tests' do
     inherit! :complete
     # Pods for testing
