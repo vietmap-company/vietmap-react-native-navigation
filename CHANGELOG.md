@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.2] - 2025-09-16
+
+### Fixed
+- **Android Play Store Compatibility**: Fixed "App does not support 16kb" error for Google Play Store submission
+  - Added support for 16KB page size compatibility as required by Google Play Store
+  - Updated Android manifest and build configuration to support new Android runtime requirements
+  - Enhanced memory allocation handling for devices with 16KB page sizes
+  - Improved compatibility with Android 15+ devices that use 16KB memory pages
+  - Fixed native library loading issues related to page size alignment
+  - Updated build.gradle configurations to ensure Play Store compliance
+
 ## [1.6.1] - 2025-09-12
 
 ### Improved
