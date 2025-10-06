@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2025-10-06
+
+### Added
+- **Traffic Alert System**: Enhanced alert support for road signs and traffic infrastructure
+  - **Camera Alert**: Voice warnings when approaching speed cameras
+  - **Traffic Light Alert**: Audio notifications when approaching traffic lights
+  - **Toll Plaza Alert**: Voice alerts when approaching toll plazas and payment stations
+  - Cross-platform support for iOS and Android with native voice synthesis
+  - Real-time detection of road infrastructure from map data
+  - Customizable alert distance and timing for different alert types
+
+### Fixed
+- **Xcode 16.1 Compatibility**: Resolved iOS build issues with latest Xcode version
+  - Fixed VietMapDirections.swift module loading failures in Xcode 16.1
+  - Updated iOS deployment target to 15.1 for React Native 0.80.1 compatibility
+  - Disabled explicit module compilation to resolve Swift package conflicts
+  - Updated CocoaPods configuration for iOS SDK 26.0 support
+  - Enhanced build system compatibility with latest iOS development tools
+  - Fixed Node.js path resolution in Xcode build phases
+
 ## [1.6.2] - 2025-09-16
 
 ### Fixed
