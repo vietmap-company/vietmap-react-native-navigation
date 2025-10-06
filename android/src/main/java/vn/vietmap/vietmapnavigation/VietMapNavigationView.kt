@@ -976,9 +976,9 @@ class VietMapNavigationView(
                             speedAlertManager.stopSpeedAlerts()
                             restartAlert = true
                         }
-                        Log.d("VietmapSpeedAlert", "Current location: ${snappedLocation.latitude}, ${snappedLocation.longitude}")
+                        // Log.d("VietmapSpeedAlert", "Current location: ${snappedLocation.latitude}, ${snappedLocation.longitude}, ${snappedLocation.speed}, ${snappedLocation.bearing.toDouble()}")
                         // Xử lý location
-                        speedAlertManager.processExternalLocation(snappedLocation.latitude, snappedLocation.longitude, currentSpeed.toDouble(), snappedLocation.bearing.toDouble())
+                        speedAlertManager.processExternalLocation(snappedLocation.latitude, snappedLocation.longitude, snappedLocation.speed.toDouble(), snappedLocation.bearing.toDouble())
 
                         val progressEvent =
                             VietMapRouteProgressEvent(routeProgress, location, snappedLocation)
