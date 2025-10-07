@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.1] - 2025-10-07
+
+### Improved
+- **Alert System Performance**: Enhanced alert functionality and user experience
+  - Optimized alert detection algorithms for faster response times
+  - Improved audio alert timing to prevent overlapping notifications
+  - Enhanced alert priority system to handle multiple simultaneous alerts
+  - Better memory management for continuous alert processing
+  - Reduced CPU usage during active navigation with alerts
+  - Improved alert accuracy with enhanced distance calculations
+  - Enhanced voice synthesis quality and volume control
+  - Better integration with system audio settings and interruptions
+  - Optimized battery usage during extended navigation sessions with alerts
+
+### Fixed
+- **Alert Stability**: Resolved edge cases in alert system operation
+  - Fixed memory leaks during continuous alert monitoring
+  - Improved error handling when GPS signal is weak or lost
+  - Better handling of rapid alert succession scenarios
+  - Fixed audio conflicts with other navigation sounds
+  - Resolved timing issues with alert notifications
+
 ## [1.7.0] - 2025-10-06
 
 ### Added
