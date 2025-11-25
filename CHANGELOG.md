@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.2] - 2025-11-25
+
+### Added
+- **16KB Page Size Support**: Enhanced Android compatibility for Google Play Store requirements
+  - Updated `maps-sdk-android` from v2.6.0 to v4.1.0 with full 16KB page size support
+  - Updated `vietmap-tracking-sdk-android` from v1.2.2 to v1.2.3 with 16KB alignment
+
+### Changed
+- **Android Dependencies Update**:
+  - Maps SDK: Upgraded to v4.1.0 for improved performance and 16KB support
+  - Tracking SDK: Updated to v1.2.3 with enhanced memory alignment
+  - Improved APK compatibility with newer Android devices
+  - Better memory management and reduced potential crashes on 16KB page devices
+
+### Note
+- For best compatibility with Google Play's 16KB requirement, consider filtering ABIs:
+  ```gradle
+  android {
+      defaultConfig {
+          ndk {
+              abiFilters 'arm64-v8a', 'x86_64'
+          }
+      }
+  }
+  ```
+
 ## [1.7.1] - 2025-10-07
 
 ### Improved
