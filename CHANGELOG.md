@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.3] - 2026-02-04
+
+### Changed
+- **Android Dependencies Update**:
+  - Updated `maps-sdk-navigation-android` from v2.5.1 to v2.6.0
+  - Improved navigation stability and performance
+  - Enhanced compatibility with React Native New Architecture
+
+### Fixed
+- **Build Compatibility**: Resolved JitPack dependency resolution issues
+  - Fixed build errors when using `newArchEnabled=true`
+  - Improved Gradle dependency fetching reliability
+  - Better error handling for network-related build failures
+
+### Note
+- **New Architecture Support**: This SDK works optimally with `newArchEnabled=false`
+- For projects using `newArchEnabled=true` that encounter build errors, set `newArchEnabled=false` in `android/gradle.properties`
+- Full New Architecture support is planned for future releases
+
 ## [1.7.2] - 2025-11-25
 
 ### Added
