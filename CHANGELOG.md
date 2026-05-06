@@ -5,6 +5,150 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0] - 2026-05-06
+
+### ⚠️ BREAKING CHANGES
+
+- **React Native Version Requirement**:
+  - Minimum React Native version: `0.72.0` → **`0.72.0`**
+  - Tested with React Native: **`0.85.2`**
+  - Upgraded from RN 0.80.1 to 0.85.2 (5 minor version jump)
+  - **Known Issue**: iOS build may fail with RN 0.85.2 due to `TurboCxxModule.cpp` missing. Recommend using RN 0.84.0 until React Native team resolves this issue.
+
+- **Event Name Changes** (iOS & Android):
+  - `userOffRoute` → **`onUserOffRoute`**
+  - Update your event handlers:
+    ```tsx
+    // Old
+    <VietMapNavigation userOffRoute={(e) => {}} />
+    
+    // New
+    <VietMapNavigation onUserOffRoute={(e) => {}} />
+    ```
+
+- **Android Build Requirements**:
+  - Java version: `1.8` → **`17`**
+  - Gradle version: `8.5` → **`8.9`**
+  - Update `android/build.gradle`:
+    ```gradle
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    ```
+
+- **Package Manager**:
+  - Migrated from npm to yarn
+  - Removed `package-lock.json`, added `yarn.lock`
+
+### Added
+
+- **New Architecture Support**:
+  - Added Codegen configuration in `package.json`
+  - Added `VietMapNavigationNativeComponent.ts` for Fabric/TurboModules
+  - Supports both Old and New Architecture
+  
+- **Android Fabric Support**:
+  - New `VietMapEvent.kt` class for Fabric-compatible event dispatch
+  - `PluginUtilities.kt` now uses `UIManagerHelper.getEventDispatcher` for Fabric
+  - Added `ViewManagerDelegate` support in `VietMapNavigationManager.kt`
+
+### Changed
+
+- **Dependencies**:
+  - React: `19.1.0` → `19.2.3`
+  - React Native: `0.80.1` → `0.85.2`
+  - Android SDK: `maps-sdk-navigation-android` `2.5.1` → `2.6.0`
+  - Lifecycle: Migrated from deprecated `lifecycle-extensions` to:
+    - `lifecycle-runtime-ktx: 2.8.7`
+    - `lifecycle-viewmodel-ktx: 2.8.7`
+
+- **iOS Updates**:
+  - Updated `connectedScenes` API for iOS compatibility
+  - Minimum iOS version: **13.0+** (required for `UIApplication.shared.connectedScenes`)
+  - Requires Xcode 14.0+ for React Native 0.85
+
+- **Gradle Configuration**:
+  - Updated AGP (Android Gradle Plugin) compatibility
+  - Improved build performance with Gradle 8.9
+
+### Fixed
+
+- **iOS Property Name**: Fixed typo `initialLatLngZoom["long"]` → `initialLatLngZoom["lng"]`
+- **Type Safety**: Improved TypeScript type definitions for event handlers
+
+### Migration Guide
+
+#### Step 1: Update Dependencies
+
+```bash
+# Update React Native and dependencies
+yarn add react-native@0.84.0  # Use 0.84.0 instead of 0.85.2 for stability
+yarn add react@19.2.3
+```
+
+#### Step 2: Update Android Configuration
+
+```gradle
+// android/build.gradle
+android {
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+}
+```
+
+#### Step 3: Update Event Handlers
+
+```tsx
+// Replace all instances
+<VietMapNavigation
+  onUserOffRoute={(event) => {
+    console.log('User is off route:', event);
+  }}
+/>
+```
+
+#### Step 4: Clean and Rebuild
+
+```bash
+# Android
+cd android && ./gradlew clean && cd ..
+rm -rf android/build android/.gradle
+
+# iOS
+cd ios
+rm -rf Pods Podfile.lock
+pod install
+cd ..
+
+# Rebuild
+yarn android
+yarn ios
+```
+
+### Known Issues
+
+- **iOS Build Error with RN 0.85.2**:
+  - Error: `TurboCxxModule.cpp` file not found
+  - Root Cause: React Native 0.85.2 restructured ReactCommon module
+  - Workaround: Use React Native 0.84.0 until official fix is released
+  - Tracking: React Native GitHub issues
+
+### Recommendations
+
+- **Short Term**: Use React Native `0.84.0` for production stability
+- **Long Term**: Wait for React Native `0.85.3` or `0.86.0` to resolve iOS build issues
+- Test thoroughly on both iOS and Android before deploying to production
+- Review breaking changes in your codebase, especially event handlers
+
 ## [1.7.3] - 2026-02-04
 
 ### Changed
