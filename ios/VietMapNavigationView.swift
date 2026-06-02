@@ -54,7 +54,14 @@ extension UIView {
     var _coordinates: [CLLocationCoordinate2D]?
     var _remainingPointCount: Int = 0
     @objc var routeController: RouteController?
-    
+
+    /// Last location reported by the route controller, used to keep the puck glued to the GPS
+    /// position on every rendered frame (see mapViewDidFinishRenderingFrame).
+    var currentLocation: CLLocation?
+    /// Wall-clock time of the previous course-tracking camera update, used to animate each
+    /// camera move over the real GPS tick interval instead of a hardcoded duration.
+    private var lastCameraUpdateTime: TimeInterval = 0
+
     // MARK: - define parameter from RN
     @objc var shouldSimulateRoute: Bool = false
     @objc var initialLatLngZoom: NSDictionary = [:]
@@ -137,7 +144,11 @@ extension UIView {
         routeController?.delegate = self
         routeController?.reroutesProactively = true
         routeController?.resume()
-        navigationMapView.recenterMap()
+        // Enable course tracking so the first GPS tick snaps both puck and camera to the route.
+        // We drive the camera ourselves per-tick (see progressDidChange) instead of recenterMap(),
+        // which lives in the RouteMapViewController we bypass and doesn't move our viewport.
+        lastCameraUpdateTime = 0
+        navigationMapView.tracksUserCourse = true
         navigationMapView.showsUserLocation = true
         resumeNotifications()
     }
@@ -150,6 +161,8 @@ extension UIView {
             navigationMapView.recenterMap()
             navigationMapView.userTrackingMode = .follow
             navigationMapView.tracksUserCourse = false
+            currentLocation = nil
+            lastCameraUpdateTime = 0
             suspendNotifications()
             sendEvent(event: onNavigationFinished)
             if (restartAlert) {
@@ -302,8 +315,10 @@ extension UIView {
         guard let routeProgress = notification.userInfo?[RouteControllerNotificationUserInfoKey.routeProgressKey] as? RouteProgress else { return }
         guard let location = notification.userInfo?[RouteControllerNotificationUserInfoKey.locationKey] as? CLLocation else { return }
         guard let rawLocation = notification.userInfo?[RouteControllerNotificationUserInfoKey.rawLocationKey] as? CLLocation else { return }
+        // Store the latest GPS so mapViewDidFinishRenderingFrame can keep the puck glued to it.
+        currentLocation = location
         // Update the user puck
-        let camera = MLNMapCamera(lookingAtCenter: location.coordinate, altitude: altitudeForZoomLevel(zoomLevel: navigationZoomLevel), pitch: 60, heading: location.course)
+        let camera = MLNMapCamera(lookingAtCenter: location.coordinate, altitude: altitudeForZoomLevel(zoomLevel: navigationZoomLevel), pitch: Constants.courseTrackingCameraPitch, heading: location.course)
         // Add maneuver arrow
         if routeProgress.currentLegProgress.followOnStep != nil {
             navigationMapView.addArrow(route: routeProgress.route, legIndex: routeProgress.legIndex, stepIndex: routeProgress.currentLegProgress.stepIndex + 1)
@@ -315,7 +330,54 @@ extension UIView {
             stopSpeedAlert()
             restartAlert = true
         }
-        navigationMapView.updateCourseTracking(location: location, camera: camera, animated: false)
+        // Move camera explicitly to GPS on every tick.
+        // The Pods SDK's setCamera() lives in RouteMapViewController which we bypass.
+        // updateCourseTracking() ignores its camera param; only setCamera() moves the viewport.
+        // Guard on tracksUserCourse so the camera stops following when the user explores the map.
+        if navigationMapView.tracksUserCourse {
+            // Place GPS at `courseTrackingUserAnchorRatio` down the visible content — matching
+            // NavigationMapView's internal userAnchorPoint (contentFrame.height * 0.8). Without
+            // this, setCamera puts GPS at center (50%), leaving the puck visually below the GPS
+            // screen position.
+            //
+            // setCamera centers the target in the region BELOW the top inset, so to land the
+            // puck at ratio `r` of the content height the top inset must be (2r - 1) * height.
+            // Use the safe-area-inset content rect, not raw bounds: navigation banners and the
+            // notch shrink the visible map, and bounds.height would push the anchor off-target.
+            let content = navigationMapView.bounds.inset(by: navigationMapView.safeAreaInsets)
+            let edgePaddingTop = max(0, (2 * Constants.courseTrackingUserAnchorRatio - 1)) * content.height
+            let edgePadding = UIEdgeInsets(top: edgePaddingTop, left: 0, bottom: 0, right: 0)
+
+            // Animate over the real interval between GPS ticks so the camera glides continuously
+            // instead of finishing early and stalling. Clamp to avoid a multi-second crawl after
+            // a signal gap, or a stutter when ticks arrive in a burst. First tick has no prior
+            // timestamp, so fall back to the default duration.
+            let now = Date().timeIntervalSince1970
+            let duration: TimeInterval
+            if lastCameraUpdateTime > 0 {
+                let delta = now - lastCameraUpdateTime
+                duration = min(Constants.courseTrackingMaxCameraDuration, max(Constants.courseTrackingMinCameraDuration, delta))
+            } else {
+                duration = Constants.courseTrackingDefaultCameraDuration
+            }
+            lastCameraUpdateTime = now
+
+            navigationMapView.setCamera(camera, withDuration: duration, animationTimingFunction: CAMediaTimingFunction(name: .linear), edgePadding: edgePadding, completionHandler: nil)
+
+            // Keep rendering at full frame rate while course-tracking.
+            //
+            // NavigationMapView registers its OWN progressDidChange observer in commonInit() that
+            // listens to the same .routeControllerProgressDidChange notification. When tracking, its
+            // 3s enableFrameByFrameCourseViewTracking window expires and it drops
+            // preferredFramesPerSecond to FrameIntervalOptions.decreasedFramesPerSecond (5 fps) on
+            // straight stretches to save power — fine for the SDK's own course tracking, but at 5 fps
+            // our per-tick camera animation and per-frame puck reprojection turn choppy (the jitter
+            // that kicks in ~3s after movement starts). Our observer runs after the SDK's, so pinning
+            // the frame rate back to maximum here wins.
+            navigationMapView.preferredFramesPerSecond = MLNMapViewPreferredFramesPerSecond.maximum
+        }
+        // Sets userLocationForCourseTracking (required by frame-by-frame) and updates puck bearing.
+        navigationMapView.updateCourseTracking(location: location, camera: camera, animated: true)
         // Handle alert
         trackingSDK?.processExternalLocation(latitude: location.coordinate.latitude, longitude: location.coordinate.longitude, speed: location.speed, heading: location.course)
         sendEvent(event: onRouteProgressChange, data: encodeRouteProgressChange(routeProgress: routeProgress,location:location,rawLocation:rawLocation))
@@ -385,7 +447,26 @@ extension UIView {
             mapView.setCenter(initialCoordinate, zoomLevel: zoomLevel, animated: false)
         }
     }
-    
+
+    // MARK: - MLNMapViewDelegate
+    // Mirror what the Pods SDK's updateCourseTrackingAfterDidFinishRenderingFrame() does internally.
+    // On every rendered frame, convert the GPS coordinate to the current screen point and place
+    // the puck there. During camera animation the screen point changes each frame, so the puck
+    // glides smoothly with the GPS instead of lagging behind.
+    //
+    // Intentionally NOT guarded by tracksUserCourse: when the user pans the map mid-navigation the
+    // SDK flips tracksUserCourse to false, and because we bypass RouteMapViewController its internal
+    // per-frame puck reprojection doesn't run. Without reprojecting here the puck would freeze at
+    // its last screen point while the map slides underneath, so it appears dragged by the finger
+    // and detached from the route. Reprojecting every frame keeps the puck glued to its map
+    // coordinate whether the camera is following or the user is exploring.
+    func mapViewDidFinishRenderingFrame(_ mapView: MLNMapView, fullyRendered: Bool) {
+        guard let navigationMapView = self.navigationMapView,
+              let location = currentLocation,
+              let puck = navigationMapView.userCourseView else { return }
+        puck.center = navigationMapView.convert(location.coordinate, toPointTo: navigationMapView)
+    }
+
     // MARK: - define response
     fileprivate lazy var defaultSuccess: RouteRequestSuccess = { [weak self] (routes) in
         guard let strongSelf = self else { return }
