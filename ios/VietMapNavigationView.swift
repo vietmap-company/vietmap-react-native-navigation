@@ -158,9 +158,19 @@ extension UIView {
         guard let navigationMapView = self.navigationMapView else {return}
         if (routeController != nil) {
             routeController?.endNavigation()
-            navigationMapView.recenterMap()
-            navigationMapView.userTrackingMode = .follow
+            // Tear down course tracking so the map reverts to MapLibre's native user-location dot.
+            // During navigation the SDK shows a custom userCourseView and keeps a non-nil
+            // userLocationForCourseTracking; both survive endNavigation(). Because we bypass
+            // RouteMapViewController, nothing repositions that custom puck per-frame afterwards, so
+            // on pan — especially the momentum phase after a fling, which emits no .changed gesture
+            // event — it drifts with the screen instead of sticking to the map. Clearing the course
+            // location (updateCourseTracking(location: nil) sets userLocationForCourseTracking = nil
+            // then returns) and re-enabling showsUserLocation routes display back to the native dot,
+            // which the renderer keeps glued to its map coordinate every frame.
             navigationMapView.tracksUserCourse = false
+            navigationMapView.updateCourseTracking(location: nil)
+            navigationMapView.showsUserLocation = true
+            navigationMapView.userTrackingMode = .follow
             currentLocation = nil
             lastCameraUpdateTime = 0
             suspendNotifications()

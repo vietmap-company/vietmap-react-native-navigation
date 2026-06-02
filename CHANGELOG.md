@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-02
+
+### Added
+- **GPS Puck & Course-Tracking Camera**: Introduced course-tracking camera constants and improved the user-location puck behavior for smoother, heading-aware navigation.
+  - New camera/tracking constants exposed on both iOS (`Constants.swift`) and the shared native component.
+  - Enhanced puck rendering and camera follow logic in `VietMapNavigationView`.
+
+### Fixed
+- General code cleanup and stability improvements across the Android and iOS native layers.
+
 ## [1.7.3] - 2026-02-04
 
 ### Changed
