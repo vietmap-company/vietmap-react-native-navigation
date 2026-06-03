@@ -50,5 +50,11 @@ Pod::Spec.new do |s|
   s.dependency 'VietMapCoreNavigation', '3.1.0'
   s.dependency 'VietmapTrackingSDK', '1.2.2'
   s.swift_version = '5.0'
+
+  # Fix: non-modular-include-in-framework-module with Xcode 16+/iOS 26 SDK
+  s.pod_target_xcconfig = {
+    'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
+    'ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES'
+  }
 end
 
