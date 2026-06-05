@@ -50,6 +50,12 @@ interface MilestoneData {
 export interface IVietMapNavigationProps {
   baseUrl?: string;
   apiKey: string;
+  /**
+   * Full VietMap style URL for the tilemap (including the tilemap apikey query param).
+   * Use this when your tilemap key differs from the navigation `apiKey`, or to point at a
+   * different style endpoint. When omitted, the SDK falls back to a light style built from `apiKey`.
+   */
+  styleUrl?: string;
   apiKeyAlert?: string;
   apiIDAlert?: string;
   puckImage?: string;

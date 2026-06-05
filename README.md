@@ -17,6 +17,7 @@ VietMap turn-by-turn routing based on real-time traffic for React Native. A navi
 - **Compatibility**: 
   - React Native: 0.70.0 and above (tested up to 0.80.1)
   - React: 18.0.0 and above (tested up to 19.1.0)
+  - **Architecture**: this is a Fabric (codegen) component and is built for the **New Architecture**. Keep `newArchEnabled=true` (Android `gradle.properties` / iOS `RCT_NEW_ARCH_ENABLED=1`) — the bundled example runs with the New Architecture enabled. Do not disable it: the component is not designed for the legacy Paper renderer.
 - If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
 ## Installation
 
@@ -199,7 +200,18 @@ export default VietMapNavigationScreen;
 
 #### `apiKey` (**Required**)
 
-Api key VietMap provided for user/customer
+API key used for **navigation/routing** (the directions service). If you don't provide `styleUrl`, this key is also used to build the default tilemap style URL.
+
+#### `styleUrl`
+
+Full VietMap style URL for the **tilemap** (basemap), including its own apikey query parameter.
+
+Use this when VietMap issued you **two separate keys** — one for the tilemap and one for navigation — or when you need to point at a different style endpoint than the SDK default. When omitted, the SDK falls back to a light style built from `apiKey` (backward compatible).
+
+```tsx
+  styleUrl={'https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_TILEMAP_KEY'}
+  apiKey={'YOUR_NAVIGATION_KEY'}
+```
 
 #### `initialLatLngZoom` (**Required**)
 

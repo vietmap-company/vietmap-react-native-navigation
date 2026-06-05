@@ -49,11 +49,19 @@ extension UIView {
     }
     var embedded: Bool
     var embedding: Bool
-    let _url = Bundle.main.object(forInfoDictionaryKey: "VietMapURL") as! String
+    let _url = Bundle.main.object(forInfoDictionaryKey: "VietMapURL") as? String
+    /// Optional style URL passed from RN. Overrides the Info.plist `VietMapURL` so the app can use a
+    /// separate tilemap key / style endpoint independent of the navigation key.
+    @objc var styleUrl: String?
     var _wayPoints = [Waypoint]()
     var _coordinates: [CLLocationCoordinate2D]?
     var _remainingPointCount: Int = 0
     @objc var routeController: RouteController?
+
+    /// Whether a navigation session is currently active. Used to decide custom-puck visibility.
+    /// `routeController` alone is unreliable for this: it is never reset to nil after a session ends,
+    /// so a later puck re-apply (RN re-render / prop change) would wrongly treat us as navigating.
+    private var isNavigating: Bool = false
 
     /// Last location reported by the route controller, used to keep the puck glued to the GPS
     /// position on every rendered frame (see mapViewDidFinishRenderingFrame).
@@ -158,10 +166,12 @@ extension UIView {
         routeController?.delegate = self
         routeController?.reroutesProactively = true
         routeController?.resume()
+        isNavigating = true
         // Enable course tracking so the first GPS tick snaps both puck and camera to the route.
         // We drive the camera ourselves per-tick (see progressDidChange) instead of recenterMap(),
         // which lives in the RouteMapViewController we bypass and doesn't move our viewport.
         lastCameraUpdateTime = 0
+        navigationMapView.userCourseView?.isHidden = false
         navigationMapView.tracksUserCourse = true
         navigationMapView.showsUserLocation = true
         resumeNotifications()
@@ -181,12 +191,17 @@ extension UIView {
             // location (updateCourseTracking(location: nil) sets userLocationForCourseTracking = nil
             // then returns) and re-enabling showsUserLocation routes display back to the native dot,
             // which the renderer keeps glued to its map coordinate every frame.
+            navigationMapView.userCourseView?.isHidden = true
             navigationMapView.tracksUserCourse = false
             navigationMapView.updateCourseTracking(location: nil)
             navigationMapView.showsUserLocation = true
             navigationMapView.userTrackingMode = .follow
             currentLocation = nil
             lastCameraUpdateTime = 0
+            // Mark the session as ended and drop the controller so a later puck re-apply
+            // correctly treats us as not navigating and keeps the custom puck hidden.
+            isNavigating = false
+            routeController = nil
             suspendNotifications()
             sendEvent(event: onNavigationFinished)
             if (restartAlert) {
@@ -440,7 +455,9 @@ extension UIView {
     // MARK: - init map view
     func setupMapView() {
         let parentView = self.parentViewController
-        navigationMapView = NavigationMapView(frame: frame,styleURL: URL(string: _url))
+        // Prefer the RN-provided styleUrl; fall back to the Info.plist VietMapURL.
+        let resolvedStyleUrl = (styleUrl?.isEmpty == false ? styleUrl : nil) ?? _url
+        navigationMapView = NavigationMapView(frame: frame, styleURL: resolvedStyleUrl.flatMap { URL(string: $0) })
         // Gesture for map
         let longClick = UILongPressGestureRecognizer(target: self, action: #selector(handleLongPress(_:)))
         longClick.delegate = self
@@ -462,6 +479,7 @@ extension UIView {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.delegate = self
         mapView.navigationMapDelegate = self
+        mapView.showsUserLocation = true
         mapView.userTrackingMode = .follow
         mapView.logoView.isHidden = false
         if let initLat = initialLatLngZoom["lat"] as? Double, let initLong = initialLatLngZoom["lng"] as? Double {
@@ -498,6 +516,8 @@ extension UIView {
             } else {
                 mapView.userCourseView = imageView
             }
+            // Hide the custom puck until navigation starts; the native dot is shown instead.
+            mapView.userCourseView?.isHidden = !self.isNavigating
         }
     }
 

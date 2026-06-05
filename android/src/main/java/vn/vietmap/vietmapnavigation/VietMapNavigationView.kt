@@ -1,7 +1,5 @@
 package vn.vietmap.vietmapnavigation
 
-//import vn.vietmap.bindgen.Expected
-//import vn.vietmap.vietmapsdk.maps.EdgeInsets
 import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
@@ -18,7 +16,6 @@ import android.widget.FrameLayout
 import androidx.annotation.RequiresApi
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.graphics.component1
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.ReadableArray
 import com.facebook.react.bridge.ReadableMap
@@ -102,10 +99,6 @@ import vn.vietmap.vietmapsdk.style.layers.PropertyFactory.lineWidth
 import vn.vietmap.vietmapsdk.style.layers.SymbolLayer
 import vn.vietmap.vietmapsdk.style.sources.GeoJsonSource
 import com.vietmap.trackingsdk.VietmapTrackingSDK
-import com.vietmap.trackingsdk.VietmapSpeedAlertManager
-import com.vietmap.trackingsdk.TrackingConfig
-import com.vietmap.trackingsdk.VMLocation
-import com.vietmap.trackingsdk.RouteData
 import com.vietmap.trackingsdk.VehicleType
 import kotlin.math.PI
 import kotlin.math.cos
@@ -150,6 +143,8 @@ class VietMapNavigationView(
     private var routeUtils = RouteUtils()
     private val snapEngine = SnapToRoute()
     private var apikey: String? = null
+    // True once a custom styleUrl prop has been supplied, so setApiKey stops overwriting mapStyleURL.
+    private var hasCustomStyleUrl: Boolean = false
     private var apiKeyAlert: String? = null
     private var apiIDAlert: String? = null
     private var customPuckImageUri: String? = null
@@ -157,13 +152,13 @@ class VietMapNavigationView(
     private var puckImageWidth: Int = 0
     private var puckImageHeight: Int = 0
     private var puckImageRotation: Float = 0f
-    
+
     // Vehicle configuration variables
     private var pendingVehicleId: String? = null
     private var pendingVehicleType: Int? = null
     private var pendingVehicleSeats: Int? = null
     private var pendingVehicleWeight: Double? = null
-    
+
     private var baseUrl: String = "https://maps.vietmap.vn/api/navigations/route/"
     private var speechPlayer: SpeechPlayer? = null
     private var routeProgress: RouteProgress? = null
@@ -252,7 +247,7 @@ class VietMapNavigationView(
         }
 
         context.currentActivity?.let {
-            if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                 val permissionState =
                     ContextCompat.checkSelfPermission(it, Manifest.permission.POST_NOTIFICATIONS)
 
@@ -313,10 +308,9 @@ class VietMapNavigationView(
                     null,
                     zoomLevel = mapZoomLevel
                 )
-
             }
+            sendEvent(VietMapEvents.MAP_READY)
         }
-        
         // Initialize SDK sau khi map ready
         initializeSDK()
     }
@@ -325,10 +319,10 @@ class VietMapNavigationView(
         // Initialize SDK
         vietmapSDK = VietmapTrackingSDK.getInstance(context)
         vietmapSDK.initialize("VIETMAP_ALERT")
-        
+
         // Gọi configureAlertAPI nếu apiKeyAlert và apiIDAlert đã được set trước đó
         configureAlertAPI()
-        
+
         // Gọi configureVehicle nếu vehicle info đã được set trước đó
         configureVehicle()
     }
@@ -389,7 +383,7 @@ class VietMapNavigationView(
                 ///walking
                 ///motorcycle
                 .profile(profile ?: "driving-traffic")
-            
+
             for (i in 1 until coordinates.size - 1) {
                 build.addWaypoint(coordinates[i])
             }
@@ -424,7 +418,7 @@ class VietMapNavigationView(
                             binding.mapView!!.context,
                             vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
                         )
-                        
+
                         navigationMapRoute =
                             NavigationMapRoute(
                                 navigation,
@@ -483,7 +477,16 @@ class VietMapNavigationView(
 
     fun setApiKey(apiKey: String) {
         this.apikey = apiKey
-        mapStyleURL = "https://maps.vietmap.vn/api/maps/light/styles.json?apikey=$apiKey"
+        // apiKey is the navigation/routing token. Only derive the tilemap style URL from it as a
+        // fallback when the app hasn't supplied an explicit styleUrl (supports separate tilemap key).
+        if (!hasCustomStyleUrl) {
+            mapStyleURL = "https://maps.vietmap.vn/api/maps/light/styles.json?apikey=$apiKey"
+        }
+    }
+
+    fun setStyleUrl(styleUrl: String) {
+        hasCustomStyleUrl = true
+        mapStyleURL = styleUrl
     }
 
     fun setApiKeyAlert(apiKeyAlert: String) {
@@ -496,7 +499,7 @@ class VietMapNavigationView(
         configureAlertAPI()
     }
 
-    private fun configureAlertAPI() {        
+    private fun configureAlertAPI() {
         if (::vietmapSDK.isInitialized && apiKeyAlert != null && apiIDAlert != null) {
             try {
                 vietmapSDK.configureAlertAPI(apiKeyAlert!!, apiIDAlert!!)
@@ -504,19 +507,28 @@ class VietMapNavigationView(
                 Log.e("VietmapSpeedAlert", "Error configuring Alert API", e)
             }
         } else {
-            Log.d("VietmapSpeedAlert", "Cannot configure Alert API - SDK not initialized or missing credentials")
+            Log.d(
+                "VietmapSpeedAlert",
+                "Cannot configure Alert API - SDK not initialized or missing credentials"
+            )
         }
     }
 
     private fun configureVehicle() {
-        if (::vietmapSDK.isInitialized && 
-            pendingVehicleId != null && 
-            pendingVehicleType != null && 
-            pendingVehicleSeats != null && 
-            pendingVehicleWeight != null) {
+        if (::vietmapSDK.isInitialized &&
+            pendingVehicleId != null &&
+            pendingVehicleType != null &&
+            pendingVehicleSeats != null &&
+            pendingVehicleWeight != null
+        ) {
             try {
                 val vehicleTypeEnum = VehicleType.fromValue(pendingVehicleType!!)
-                vietmapSDK.configureVehicle(pendingVehicleId!!, vehicleTypeEnum, pendingVehicleSeats!!, pendingVehicleWeight!!)
+                vietmapSDK.configureVehicle(
+                    pendingVehicleId!!,
+                    vehicleTypeEnum,
+                    pendingVehicleSeats!!,
+                    pendingVehicleWeight!!
+                )
             } catch (e: Exception) {
                 Log.e(TAG, "Error configuring vehicle", e)
             }
@@ -580,35 +592,24 @@ class VietMapNavigationView(
 //                override fun onMoveBegin(moveGestureDetector: MoveGestureDetector) {
 //                    isOverviewing = true
 //                    sendEvent(VietMapEvents.ON_MAP_MOVE)
-//                    // TODO: handle send event here
 //                }
 //
 //                override fun onMove(moveGestureDetector: MoveGestureDetector) {}
 //                override fun onMoveEnd(moveGestureDetector: MoveGestureDetector) {
 //                    sendEvent(VietMapEvents.ON_MAP_MOVE_END)
-//                    // TODO: handle send event here
 //                }
 //            })
-//
-//
-//
 //            enableLocationComponent(style)
 //            initMapRoute()
 //        }
-//
 //        if (longPressDestinationEnabled) vietMapGL.addOnMapLongClickListener(this)
-//
-//
-//
 //        if (initialLatitude != null && initialLongitude != null) {
-//            // println("MoveCamera5")
-//
 //            moveCamera(
 //
 //                LatLng(
 //                    initialLatitude!!,
 //                    initialLongitude!!
-//                ), null, 3.0
+//                ), null, mapZoomLevel
 //            )
 //        }
 //        sendEvent(VietMapEvents.MAP_READY)
@@ -619,7 +620,7 @@ class VietMapNavigationView(
             binding.mapView!!.context,
             vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
         )
-        
+
         navigationMapRoute =
             NavigationMapRoute(
                 navigation,
@@ -756,7 +757,10 @@ class VietMapNavigationView(
                 }
 
                 if (bitmap == null) {
-                    Log.e(TAG, "Puck image could not be decoded from URI: \"$uri\". Falling back to default navigation icon.")
+                    Log.e(
+                        TAG,
+                        "Puck image could not be decoded from URI: \"$uri\". Falling back to default navigation icon."
+                    )
                     return@Thread
                 }
 
@@ -764,9 +768,17 @@ class VietMapNavigationView(
                     Bitmap.createScaledBitmap(bitmap, puckImageWidth, puckImageHeight, true)
                 } else bitmap
                 val finalBitmap = if (puckImageRotation != 0f) {
-                    val result = Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, Bitmap.Config.ARGB_8888)
+                    val result = Bitmap.createBitmap(
+                        scaledBitmap.width,
+                        scaledBitmap.height,
+                        Bitmap.Config.ARGB_8888
+                    )
                     val matrix = android.graphics.Matrix()
-                    matrix.postRotate(puckImageRotation, scaledBitmap.width / 2f, scaledBitmap.height / 2f)
+                    matrix.postRotate(
+                        puckImageRotation,
+                        scaledBitmap.width / 2f,
+                        scaledBitmap.height / 2f
+                    )
                     Canvas(result).drawBitmap(scaledBitmap, matrix, null)
                     result
                 } else scaledBitmap
@@ -783,7 +795,11 @@ class VietMapNavigationView(
                     }
                 }
             } catch (e: Exception) {
-                Log.e(TAG, "Failed to load puck image from URI: \"$uri\". Falling back to default navigation icon.", e)
+                Log.e(
+                    TAG,
+                    "Failed to load puck image from URI: \"$uri\". Falling back to default navigation icon.",
+                    e
+                )
             }
         }.start()
     }
@@ -795,8 +811,10 @@ class VietMapNavigationView(
             return null
         }
         val drawable = ContextCompat.getDrawable(context, resId) ?: return null
-        val w = if (puckImageWidth > 0) puckImageWidth else (if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96)
-        val h = if (puckImageHeight > 0) puckImageHeight else (if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96)
+        val w =
+            if (puckImageWidth > 0) puckImageWidth else (if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96)
+        val h =
+            if (puckImageHeight > 0) puckImageHeight else (if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96)
         val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bmp)
         drawable.setBounds(0, 0, canvas.width, canvas.height)
@@ -900,7 +918,7 @@ class VietMapNavigationView(
                         binding.mapView!!.context,
                         vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
                     )
-                    
+
                     navigationMapRoute =
                         NavigationMapRoute(
                             navigation,
@@ -961,48 +979,48 @@ class VietMapNavigationView(
     fun startNavigation() {
         context.currentActivity?.runOnUiThread {
 
-        tilt = 10000.0
-        isOverviewing = false
-        isNavigationCanceled = false
+            tilt = 10000.0
+            isOverviewing = false
+            isNavigationCanceled = false
 
-        navigation = VietmapNavigation(
-            context, navigationOptions, locationEngine!!
-        )
-        if (currentRoute != null) {
-            if (shouldSimulateRoute) {
-                val mockLocationEngine = ReplayRouteLocationEngine()
+            navigation = VietmapNavigation(
+                context, navigationOptions, locationEngine!!
+            )
+            if (currentRoute != null) {
+                if (shouldSimulateRoute) {
+                    val mockLocationEngine = ReplayRouteLocationEngine()
 
-                mockLocationEngine.assign(currentRoute)
-                navigation?.locationEngine = mockLocationEngine
-            } else {
-                locationEngine?.let {
-                    navigation?.locationEngine = it
+                    mockLocationEngine.assign(currentRoute)
+                    navigation?.locationEngine = mockLocationEngine
+                } else {
+                    locationEngine?.let {
+                        navigation?.locationEngine = it
+                    }
+                }
+                isRunning = true
+                vietMapGL.locationComponent.locationEngine = null
+                navigation?.addNavigationEventListener(this)
+                navigation?.addFasterRouteListener(this)
+                navigation?.addMilestoneEventListener(this)
+                navigation?.addOffRouteListener(this)
+                navigation?.addProgressChangeListener(this)
+
+
+                navigation?.snapEngine = snapEngine
+
+                navigationMapRoute!!.updateRouteArrowVisibilityTo(true)
+                navigationMapRoute!!.showAlternativeRoutes(true)
+                navigationMapRoute!!.updateRouteVisibilityTo(true)
+                navigationMapRoute!!.showAlternativeRoutes(true)
+                currentRoute?.let {
+                    isNavigationInProgress = true
+                    navigation?.startNavigation(currentRoute!!)
+                    sendEvent(VietMapEvents.NAVIGATION_RUNNING)
+                    recenter()
+
                 }
             }
-            isRunning = true
-            vietMapGL.locationComponent.locationEngine = null
-            navigation?.addNavigationEventListener(this)
-            navigation?.addFasterRouteListener(this)
-            navigation?.addMilestoneEventListener(this)
-            navigation?.addOffRouteListener(this)
-            navigation?.addProgressChangeListener(this)
-
-            
-            navigation?.snapEngine = snapEngine
-
-            navigationMapRoute!!.updateRouteArrowVisibilityTo(true)
-            navigationMapRoute!!.showAlternativeRoutes(true)
-            navigationMapRoute!!.updateRouteVisibilityTo(true)
-            navigationMapRoute!!.showAlternativeRoutes(true)
-            currentRoute?.let {
-                isNavigationInProgress = true
-                navigation?.startNavigation(currentRoute!!)
-                sendEvent(VietMapEvents.NAVIGATION_RUNNING)
-                recenter()
-
-            }
         }
-            }
     }
 
     fun finishNavigation(isOffRouted: Boolean = false) {
@@ -1027,7 +1045,7 @@ class VietMapNavigationView(
                 navigation?.removeNavigationEventListener(this)
                 navigation?.removeOffRouteListener(this)
                 navigation?.removeProgressChangeListener(this)
-                
+
                 if (restartAlert) {
                     // Nếu có cảnh báo tốc độ đang tạm dừng thì khởi động lại
                     val speedAlertManager = vietmapSDK.speedAlertManager
@@ -1086,7 +1104,12 @@ class VietMapNavigationView(
                         }
                         // Log.d("VietmapSpeedAlert", "Current location: ${snappedLocation.latitude}, ${snappedLocation.longitude}, ${snappedLocation.speed}, ${snappedLocation.bearing.toDouble()}")
                         // Xử lý location
-                        speedAlertManager.processExternalLocation(snappedLocation.latitude, snappedLocation.longitude, snappedLocation.speed.toDouble(), snappedLocation.bearing.toDouble())
+                        speedAlertManager.processExternalLocation(
+                            snappedLocation.latitude,
+                            snappedLocation.longitude,
+                            snappedLocation.speed.toDouble(),
+                            snappedLocation.bearing.toDouble()
+                        )
 
                         val progressEvent =
                             VietMapRouteProgressEvent(routeProgress, location, snappedLocation)
@@ -1259,13 +1282,14 @@ class VietMapNavigationView(
             playVoiceAnnouncement(milestone)
         }
         if (routeUtils.isArrivalEvent(routeProgress, milestone) && isNavigationInProgress) {
-            val arrivalLatLng = routeProgress.currentLegProgress()?.currentStep()?.maneuver()?.location()
-            val data:JSONObject = JSONObject()
+            val arrivalLatLng =
+                routeProgress.currentLegProgress()?.currentStep()?.maneuver()?.location()
+            val data: JSONObject = JSONObject()
             arrivalLatLng?.let {
                 data.put("latitude", arrivalLatLng.latitude())
                 data.put("longitude", arrivalLatLng.longitude())
             }
-            sendEvent(VietMapEvents.ON_ARRIVAL,data = data)
+            sendEvent(VietMapEvents.ON_ARRIVAL, data = data)
 
             if (listNavigationRemainingPoints.size == 1) {
 
@@ -1310,7 +1334,7 @@ class VietMapNavigationView(
         sendEvent(VietMapEvents.NAVIGATION_CANCELLED)
         navigation?.stopNavigation()
         isRunning = false
-        
+
         if (restartAlert) {
             // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
             val speedAlertManager = vietmapSDK.speedAlertManager
@@ -1322,7 +1346,7 @@ class VietMapNavigationView(
     override fun onNavigationFinished() {
         vietMapGL.locationComponent.locationEngine = locationEngine
         sendEvent(VietMapEvents.NAVIGATION_FINISHED)
-        
+
         if (restartAlert) {
             // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
             val speedAlertManager = vietmapSDK.speedAlertManager
@@ -1581,9 +1605,12 @@ class VietMapNavigationView(
         pendingVehicleType = vehicleType
         pendingVehicleSeats = seats
         pendingVehicleWeight = weight
-        
-        Log.d(TAG, "Storing vehicle config: ID=$vehicleId, Type=$vehicleType, Seats=$seats, Weight=$weight")
-        
+
+        Log.d(
+            TAG,
+            "Storing vehicle config: ID=$vehicleId, Type=$vehicleType, Seats=$seats, Weight=$weight"
+        )
+
         // Try to configure immediately if SDK is initialized
         configureVehicle()
     }
@@ -1606,8 +1633,12 @@ class VietMapNavigationView(
 
     private fun checkPermissions() {
         context.currentActivity?.let { activity ->
-            if (ContextCompat.checkSelfPermission(activity, Manifest.permission.ACCESS_FINE_LOCATION) 
-                != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(
+                    activity,
+                    Manifest.permission.ACCESS_FINE_LOCATION
+                )
+                != PackageManager.PERMISSION_GRANTED
+            ) {
                 ActivityCompat.requestPermissions(
                     activity,
                     arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),

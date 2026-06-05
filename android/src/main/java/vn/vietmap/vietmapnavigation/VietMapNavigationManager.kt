@@ -87,6 +87,13 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
         }
     }
 
+    @ReactProp(name = "styleUrl")
+    override fun setStyleUrl(view: VietMapNavigationView, sources: String?) {
+        if (sources != null) {
+            view.setStyleUrl(sources)
+        }
+    }
+
     @ReactProp(name = "navigationZoomLevel")
     override fun setNavigationZoomLevel(view: VietMapNavigationView, zoomLevel: Double) {
         view.setNavigationZoomLevel(zoomLevel)

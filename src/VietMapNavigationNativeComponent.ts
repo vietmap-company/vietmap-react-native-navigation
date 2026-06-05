@@ -18,6 +18,7 @@ type GenericEvent = Readonly<{}>;
 export interface NativeProps extends ViewProps {
   apiKey: string;
   baseUrl?: string;
+  styleUrl?: string;
   apiKeyAlert?: string;
   apiIDAlert?: string;
   puckImage?: string;

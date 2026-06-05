@@ -397,6 +397,7 @@ const VietMapNavigationScreen = () => {
               }
             }
           }}
+          styleUrl = {'https://maps.vietmap.vn/maps/styles/dm/style.json?apikey=YOUR_MAP_API_KEY_HERE'}
           onMapMove={() => {
             console.log('onMapMove');
             setIsOverview(true)

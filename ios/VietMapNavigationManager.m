@@ -24,4 +24,5 @@ RCT_EXPORT_VIEW_PROPERTY(puckImage, NSString)
 RCT_EXPORT_VIEW_PROPERTY(puckImageWidth, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(puckImageHeight, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(puckImageRotation, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(styleUrl, NSString)
 @end
