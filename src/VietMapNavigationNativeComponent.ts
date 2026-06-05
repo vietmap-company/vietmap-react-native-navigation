@@ -20,6 +20,10 @@ export interface NativeProps extends ViewProps {
   baseUrl?: string;
   apiKeyAlert?: string;
   apiIDAlert?: string;
+  puckImage?: string;
+  puckImageWidth?: Double;
+  puckImageHeight?: Double;
+  puckImageRotation?: Double;
   shouldSimulateRoute?: boolean;
   initialLatLngZoom?: LatLngZoom;
   navigationZoomLevel?: Double;

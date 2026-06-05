@@ -130,5 +130,26 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
         }
     }
 
+    @ReactProp(name = "puckImage")
+    override fun setPuckImage(view: VietMapNavigationView, puckImage: String?) {
+        if (puckImage != null) {
+            view.setPuckImage(puckImage)
+        }
+    }
+
+    @ReactProp(name = "puckImageWidth")
+    override fun setPuckImageWidth(view: VietMapNavigationView, puckImageWidth: Double) {
+        view.setPuckImageWidth(puckImageWidth)
+    }
+
+    @ReactProp(name = "puckImageHeight")
+    override fun setPuckImageHeight(view: VietMapNavigationView, puckImageHeight: Double) {
+        view.setPuckImageHeight(puckImageHeight)
+    }
+
+    @ReactProp(name = "puckImageRotation")
+    override fun setPuckImageRotation(view: VietMapNavigationView, puckImageRotation: Double) {
+        view.setPuckImageRotation(puckImageRotation)
+    }
 
 }

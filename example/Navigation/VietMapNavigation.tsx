@@ -367,6 +367,10 @@ const VietMapNavigationScreen = () => {
           navigationZoomLevel={18}
           shouldSimulateRoute={true}
           apiKey={'YOUR_API_KEY_HERE'}
+          puckImage={Image.resolveAssetSource(require('./img/navigation.png')).uri}
+          puckImageWidth={60}
+          puckImageHeight={60}
+          puckImageRotation={0}
           onRouteProgressChange={(event) => {
             setRouteProgressData(event)
             calculateEstimatedArrivalTime()

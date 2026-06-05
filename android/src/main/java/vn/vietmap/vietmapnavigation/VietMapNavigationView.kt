@@ -6,6 +6,9 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
 import android.graphics.Color
 import android.location.Location
 import android.os.Build
@@ -149,6 +152,11 @@ class VietMapNavigationView(
     private var apikey: String? = null
     private var apiKeyAlert: String? = null
     private var apiIDAlert: String? = null
+    private var customPuckImageUri: String? = null
+    private var currentStyle: Style? = null
+    private var puckImageWidth: Int = 0
+    private var puckImageHeight: Int = 0
+    private var puckImageRotation: Float = 0f
     
     // Vehicle configuration variables
     private var pendingVehicleId: String? = null
@@ -650,9 +658,9 @@ class VietMapNavigationView(
 
     @SuppressLint("MissingPermission")
     private fun enableLocationComponent(loadedMapStyle: Style) {
+        currentStyle = loadedMapStyle
         val customLocationComponentOptions =
             LocationComponentOptions.builder(context).pulseEnabled(true)
-//                .backgroundDrawable()
                 .build()
         vietMapGL.locationComponent.let { locationComponent ->
             locationComponent.activateLocationComponent(
@@ -694,7 +702,106 @@ class VietMapNavigationView(
 
             locationComponent.isLocationComponentEnabled = true
         }
+        applyCustomPuckImage(loadedMapStyle)
+    }
 
+    fun setPuckImage(uri: String) {
+        customPuckImageUri = uri
+        currentStyle?.let { applyCustomPuckImage(it) }
+    }
+
+    fun setPuckImageWidth(width: Double) {
+        puckImageWidth = width.toInt()
+        currentStyle?.let { applyCustomPuckImage(it) }
+    }
+
+    fun setPuckImageHeight(height: Double) {
+        puckImageHeight = height.toInt()
+        currentStyle?.let { applyCustomPuckImage(it) }
+    }
+
+    fun setPuckImageRotation(rotation: Double) {
+        puckImageRotation = rotation.toFloat()
+        currentStyle?.let { applyCustomPuckImage(it) }
+    }
+
+    private fun applyCustomPuckImage(style: Style) {
+        val uri = customPuckImageUri ?: return
+        Thread {
+            try {
+                val bitmap: Bitmap? = when {
+                    // RN base64 data URI
+                    uri.startsWith("data:image") -> {
+                        val base64 = uri.substringAfter(",")
+                        val bytes = android.util.Base64.decode(base64, android.util.Base64.DEFAULT)
+                        BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+                    }
+                    // iOS-style/local file path (rare on Android, kept for safety)
+                    uri.startsWith("file://") -> {
+                        val path = java.net.URI(uri).path
+                        BitmapFactory.decodeFile(path)
+                    }
+                    // Dev (Metro packager serves require'd assets over http) & remote URLs
+                    uri.startsWith("http://") || uri.startsWith("https://") -> {
+                        val url = java.net.URL(uri)
+                        val connection = url.openConnection()
+                        connection.connectTimeout = 5000
+                        connection.readTimeout = 5000
+                        connection.connect()
+                        BitmapFactory.decodeStream(connection.getInputStream())
+                    }
+                    // Release: resolveAssetSource() returns a bare drawable resource name
+                    // (the require'd image is compiled into res/drawable by the bundler).
+                    else -> loadDrawableBitmap(uri)
+                }
+
+                if (bitmap == null) {
+                    Log.e(TAG, "Puck image could not be decoded from URI: \"$uri\". Falling back to default navigation icon.")
+                    return@Thread
+                }
+
+                val scaledBitmap = if (puckImageWidth > 0 && puckImageHeight > 0) {
+                    Bitmap.createScaledBitmap(bitmap, puckImageWidth, puckImageHeight, true)
+                } else bitmap
+                val finalBitmap = if (puckImageRotation != 0f) {
+                    val result = Bitmap.createBitmap(scaledBitmap.width, scaledBitmap.height, Bitmap.Config.ARGB_8888)
+                    val matrix = android.graphics.Matrix()
+                    matrix.postRotate(puckImageRotation, scaledBitmap.width / 2f, scaledBitmap.height / 2f)
+                    Canvas(result).drawBitmap(scaledBitmap, matrix, null)
+                    result
+                } else scaledBitmap
+
+                post {
+                    if (::vietMapGL.isInitialized) {
+                        style.addImage("custom-puck-icon", finalBitmap)
+                        vietMapGL.locationComponent.applyStyle(
+                            LocationComponentOptions.builder(context)
+                                .pulseEnabled(true)
+                                .gpsName("custom-puck-icon")
+                                .build()
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Failed to load puck image from URI: \"$uri\". Falling back to default navigation icon.", e)
+            }
+        }.start()
+    }
+
+    private fun loadDrawableBitmap(resourceName: String): Bitmap? {
+        val resId = context.resources.getIdentifier(resourceName, "drawable", context.packageName)
+        if (resId == 0) {
+            Log.e(TAG, "No drawable resource found for puck image name: \"$resourceName\".")
+            return null
+        }
+        val drawable = ContextCompat.getDrawable(context, resId) ?: return null
+        val w = if (puckImageWidth > 0) puckImageWidth else (if (drawable.intrinsicWidth > 0) drawable.intrinsicWidth else 96)
+        val h = if (puckImageHeight > 0) puckImageHeight else (if (drawable.intrinsicHeight > 0) drawable.intrinsicHeight else 96)
+        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        drawable.setBounds(0, 0, canvas.width, canvas.height)
+        drawable.draw(canvas)
+        return bmp
     }
 
     private fun addDestinationIconSymbolLayer(loadedMapStyle: Style) {

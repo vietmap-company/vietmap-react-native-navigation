@@ -52,6 +52,10 @@ export interface IVietMapNavigationProps {
   apiKey: string;
   apiKeyAlert?: string;
   apiIDAlert?: string;
+  puckImage?: string;
+  puckImageWidth?: number;
+  puckImageHeight?: number;
+  puckImageRotation?: number;
   shouldSimulateRoute?: boolean;
   initialLatLngZoom?: InitialLatLngZoom;
   navigationZoomLevel?: number;

@@ -77,7 +77,21 @@ extension UIView {
             configureAlertAPIIfNeeded()
         }
     }
-    
+    @objc var puckImage: String? {
+        didSet {
+            applyCustomPuckIfNeeded()
+        }
+    }
+    @objc var puckImageWidth: CGFloat = 0 {
+        didSet { applyCustomPuckIfNeeded() }
+    }
+    @objc var puckImageHeight: CGFloat = 0 {
+        didSet { applyCustomPuckIfNeeded() }
+    }
+    @objc var puckImageRotation: CGFloat = 0 {
+        didSet { applyCustomPuckIfNeeded() }
+    }
+
     // MARK: - define Event Block from RN
     @objc var onRouteProgressChange: RCTDirectEventBlock?
     @objc var onError: RCTDirectEventBlock?
@@ -453,8 +467,66 @@ extension UIView {
         if let initLat = initialLatLngZoom["lat"] as? Double, let initLong = initialLatLngZoom["lng"] as? Double {
             let initialCoordinate = CLLocationCoordinate2D(latitude: initLat, longitude: initLong)
             let zoomLevel: Double = initialLatLngZoom["zoom"] as? Double ?? 6
-            
+
             mapView.setCenter(initialCoordinate, zoomLevel: zoomLevel, animated: false)
+        }
+        applyCustomPuckIfNeeded()
+    }
+
+    // MARK: - Custom puck image
+    private func applyCustomPuckIfNeeded() {
+        guard let imageUri = puckImage, navigationMapView != nil else { return }
+        loadPuckImage(from: imageUri) { [weak self] image in
+            guard let self = self, let mapView = self.navigationMapView else { return }
+            guard let image = image else {
+                NSLog("[VietMapNavigation] Puck image could not be loaded from URI: \"\(imageUri)\". Falling back to default navigation icon.")
+                return
+            }
+            let w: CGFloat = self.puckImageWidth > 0 ? self.puckImageWidth : 50
+            let h: CGFloat = self.puckImageHeight > 0 ? self.puckImageHeight : 50
+            let frame = CGRect(x: 0, y: 0, width: w, height: h)
+            let imageView = UIImageView(frame: frame)
+            imageView.image = image
+            imageView.contentMode = .scaleAspectFit
+            if self.puckImageRotation != 0 {
+                // Wrap in a container so the SDK rotates the outer view by bearing
+                // while the inner imageView holds a static correction offset
+                let container = UIView(frame: frame)
+                imageView.transform = CGAffineTransform(rotationAngle: self.puckImageRotation * .pi / 180)
+                container.addSubview(imageView)
+                mapView.userCourseView = container
+            } else {
+                mapView.userCourseView = imageView
+            }
+        }
+    }
+
+    private func loadPuckImage(from uri: String, completion: @escaping (UIImage?) -> Void) {
+        // RN base64 data URI
+        if uri.hasPrefix("data:image") {
+            let base64Str = uri.components(separatedBy: ",").last ?? ""
+            DispatchQueue.global(qos: .userInitiated).async {
+                let image = Data(base64Encoded: base64Str).flatMap { UIImage(data: $0) }
+                DispatchQueue.main.async { completion(image) }
+            }
+        } else if uri.hasPrefix("file://") {
+            // Release: resolveAssetSource() returns a file:// URL into the app bundle.
+            let path = URL(string: uri)?.path ?? uri
+            let image = UIImage(contentsOfFile: path)
+            DispatchQueue.main.async { completion(image) }
+        } else if uri.hasPrefix("http://") || uri.hasPrefix("https://"), let url = URL(string: uri) {
+            // Dev (Metro packager serves require'd assets over http) & remote URLs
+            URLSession.shared.dataTask(with: url) { data, _, error in
+                if let error = error {
+                    NSLog("[VietMapNavigation] Failed to download puck image from \"\(uri)\": \(error.localizedDescription)")
+                }
+                let image = data.flatMap { UIImage(data: $0) }
+                DispatchQueue.main.async { completion(image) }
+            }.resume()
+        } else {
+            // Fallback: a raw file path.
+            let image = UIImage(contentsOfFile: uri)
+            DispatchQueue.main.async { completion(image) }
         }
     }
 

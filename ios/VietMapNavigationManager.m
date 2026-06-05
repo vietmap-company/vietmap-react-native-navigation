@@ -20,4 +20,8 @@ RCT_EXPORT_VIEW_PROPERTY(shouldSimulateRoute, BOOL)
 RCT_EXPORT_VIEW_PROPERTY(initialLatLngZoom, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(navigationPadding, NSDictionary)
 RCT_EXPORT_VIEW_PROPERTY(navigationZoomLevel, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(puckImage, NSString)
+RCT_EXPORT_VIEW_PROPERTY(puckImageWidth, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(puckImageHeight, NSNumber)
+RCT_EXPORT_VIEW_PROPERTY(puckImageRotation, NSNumber)
 @end

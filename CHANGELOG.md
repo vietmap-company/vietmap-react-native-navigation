@@ -5,6 +5,35 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.2] - 2026-06-05
+
+### Added
+- **Custom Navigation Puck Image**: You can now replace the default user-location puck with your own image, controlled entirely from the React Native layer — no need to add any native assets.
+  - New props on `<VietMapNavigation>`:
+    - `puckImage?: string` — image URI for the puck.
+    - `puckImageWidth?: number` / `puckImageHeight?: number` — render size (Android: dp, iOS: pt). Defaults to 50 when omitted.
+    - `puckImageRotation?: number` — static rotation offset in degrees, to correct an icon that is drawn tilted. The SDK still rotates the puck by GPS heading on top of this offset.
+  - Usage:
+    ```tsx
+    import { Image } from 'react-native';
+
+    <VietMapNavigation
+      puckImage={Image.resolveAssetSource(require('./img/navigation.png')).uri}
+      puckImageWidth={60}
+      puckImageHeight={60}
+      puckImageRotation={90}
+      // ... other props
+    />
+    ```
+
+### Behavior
+- If `puckImage` is omitted, the SDK's default navigation puck is used (unchanged behavior).
+- If the URI is invalid or the image fails to decode/download, the error is logged (tag `VietMapNavigation`) and the default puck is kept — navigation is never interrupted.
+
+### Native
+- **Android** (`VietMapNavigationView`): loads the bitmap off the main thread, scales/rotates it, registers it via `style.addImage(...)`, and applies it with `LocationComponentOptions.gpsName(...)`. Release builds resolve a `require()`d image by its bundled drawable resource name.
+- **iOS** (`VietMapNavigationView`): loads the image and sets it as `NavigationMapView.userCourseView`; rotation is applied via a wrapping container so heading rotation and the static offset compose correctly.
+
 ## [2.0.1] - 2026-06-02
 
 ### Added
