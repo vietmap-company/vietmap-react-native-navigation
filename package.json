@@ -1,12 +1,11 @@
 {
   "name": "@vietmap/vietmap-react-native-navigation",
   "title": "VietMap React Native turn by turn Navigation",
-  "version": "1.0.2",
+  "version": "2.0.1",
   "description": "VietMap turn-by-turn navigation for React Native.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "source": "src/index",
-
   "publishConfig": {
     "access": "public"
   },
@@ -36,13 +35,24 @@
     "url": "https://github.com/vietmap-company/vietmap-react-native-navigation/issues"
   },
   "homepage": "https://maps.vietmap.vn",
+  "codegenConfig": {
+    "name": "VietMapNavigationSpec",
+    "type": "components",
+    "jsSrcsDir": "src",
+    "android": {
+      "javaPackageName": "vn.vietmap.vietmapnavigation"
+    }
+  },
   "peerDependencies": {
-    "react": "*",
-    "react-native": "*"
+    "react": ">=18.0.0 <20",
+    "react-native": ">=0.72.0"
   },
   "devDependencies": {
-    "react": "18.0.0",
-    "react-native": "0.71.6",
-    "typescript": "4.3.5"
+    "react": "19.2.3",
+    "react-native": "0.85.2",
+    "@react-native-community/cli": "16.0.3",
+    "@react-native-community/cli-platform-android": "16.0.3",
+    "@react-native-community/cli-platform-ios": "16.0.3",
+    "typescript": "^5.0.0"
   }
 }

@@ -3,7 +3,7 @@
  */
 import { NavigationProgressData } from "./models/route_progress_data";
 import { RouteData } from "./models/route_data";
-declare type LocationData = {
+type LocationData = {
     nativeEvent: {
         data: {
             latitude: number;
@@ -13,15 +13,15 @@ declare type LocationData = {
         };
     };
 };
-declare type NavigationPadding = {
+type NavigationPadding = {
     left: number;
     top: number;
     right: number;
     bottom: number;
 };
-declare type InitialLatLngZoom = {
+type InitialLatLngZoom = {
     lat: number;
-    long: number;
+    lng: number;
     zoom: number;
 };
 interface MilestoneData {
@@ -33,7 +33,10 @@ interface MilestoneData {
     };
 }
 export interface IVietMapNavigationProps {
+    baseUrl?: string;
     apiKey: string;
+    apiKeyAlert?: string;
+    apiIDAlert?: string;
     shouldSimulateRoute?: boolean;
     initialLatLngZoom?: InitialLatLngZoom;
     navigationZoomLevel?: number;
@@ -53,8 +56,8 @@ export interface IVietMapNavigationProps {
     onRouteBuilding?: () => void;
     onMapReady?: () => void;
     onMilestoneEvent?: (event: MilestoneData) => void;
-    userOffRoute?: (event: LocationData) => void;
-    onArrival?: () => void;
+    onUserOffRoute?: (event: LocationData) => void;
+    onArrival?: (event: LocationData) => void;
     onNewRouteSelected?: (event: RouteData) => void;
     onMapClick?: (event: LocationData) => void;
 }

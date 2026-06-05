@@ -1,40 +1,35 @@
+const {getDefaultConfig, mergeConfig} = require('@react-native/metro-config');
+const path = require('path');
+
 /**
- * Metro configuration for React Native
- * https://github.com/facebook/react-native
+ * Metro configuration
+ * https://reactnative.dev/docs/metro
  *
- * @format
+ * @type {import('metro-config').MetroConfig}
  */
 
-const path = require('path');
-const blacklist = require('metro-config/src/defaults/exclusionList');
-const escape = require('escape-string-regexp');
-const pak = require('../package.json');
+const defaultConfig = getDefaultConfig(__dirname);
 
-const root = path.resolve(__dirname, '../');
-
-const modules = Object.keys({
-  ...pak.peerDependencies,
-});
-
-module.exports = {
-  projectRoot: __dirname,
-  watchFolders: [root],
-
-  // We need to make sure that only one version is loaded for peerDependencies
-  // So we blacklist them at the root, and alias them to the versions in example's node_modules
+const config = {
   resolver: {
-    blacklistRE: blacklist(
-      modules.map(
-        m => new RegExp(`^${escape(path.join(root, 'node_modules', m))}\\/.*$`),
-      ),
-    ),
-
-    extraNodeModules: modules.reduce((acc, name) => {
-      acc[name] = path.join(__dirname, 'node_modules', name);
-      return acc;
-    }, {}),
+    ...defaultConfig.resolver,
+    alias: {
+      '@vietmap/vietmap-react-native-navigation': path.resolve(__dirname, '../src'),
+      '@assets': path.resolve(__dirname, './assets'),
+    },
+    nodeModulesPaths: [
+      path.resolve(__dirname, 'node_modules'),
+      path.resolve(__dirname, '../node_modules'),
+      path.resolve(__dirname, '../../node_modules'),
+    ],
   },
+  watchFolders: [
+    path.resolve(__dirname, '../src'),
+    path.resolve(__dirname, './assets'),
+    path.resolve(__dirname, '../'),
+  ],
   transformer: {
+    ...defaultConfig.transformer,
     getTransformOptions: async () => ({
       transform: {
         experimentalImportSupport: false,
@@ -43,3 +38,5 @@ module.exports = {
     }),
   },
 };
+
+module.exports = mergeConfig(defaultConfig, config);

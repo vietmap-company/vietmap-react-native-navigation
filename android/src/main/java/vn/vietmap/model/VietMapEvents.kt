@@ -10,7 +10,7 @@ enum class VietMapEvents(val value: String) {
     ROUTE_BUILD_CANCELLED("routeBuildCancelled"),
     ROUTE_BUILD_NO_ROUTES_FOUND("routeBuildNoRoutesFound"),
     PROGRESS_CHANGE("progressChange"),
-    USER_OFF_ROUTE("userOffRoute"),
+    USER_OFF_ROUTE("onUserOffRoute"),
     MILESTONE_EVENT("onMilestoneEvent"),
     NAVIGATION_RUNNING("onNavigationRunning"),
     NAVIGATION_CANCELLED("onNavigationCancelled"),
@@ -29,5 +29,7 @@ enum class VietMapEvents(val value: String) {
     ON_NEW_ROUTE_SELECTED("onNewRouteSelected"),
     CAMERA_ON_MOVE("cameraOnMove"),
     MARKER_CLICKED("markerClicked"),
+    START_ALERT("startAlert"),
+    STOP_ALERT("stopAlert"),
 
 }

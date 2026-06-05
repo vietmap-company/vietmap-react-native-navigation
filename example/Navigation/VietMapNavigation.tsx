@@ -1,10 +1,10 @@
 /* eslint-disable comma-dangle */
 // import React from 'react';
-import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity } from 'react-native';
-import VietMapNavigation, { NavigationProgressData } from '@vietmap/vietmap-react-native-navigation';
-import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
-import React, { useEffect, useState } from 'react'; 
-
+import { StyleSheet, View, Pressable, Text, Dimensions, Image, TouchableOpacity, Platform, PermissionsAndroid } from 'react-native';
+import VietMapNavigation, { NavigationProgressData, VehicleType } from '../../src';
+import { VietMapNavigationController } from '../../src';
+import React, { useEffect, useState } from 'react';
+import Geolocation from '@react-native-community/geolocation';
 
 import { Icon } from 'react-native-elements';
 import Images from './img/index';
@@ -12,7 +12,7 @@ import translationGuide from './trans/index';
 import { RouteData } from '../../src/models/route_data';
 
 
-const VietMapNavigationScreen: React.FC<void> = () => { 
+const VietMapNavigationScreen = () => {
 
   const getGuideText = (modifier: string, type: string) => {
     console.log(modifier, type)
@@ -21,7 +21,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
       let data = [
         type.split(" ").join("_"),
         modifier.split(" ").join("_")
-      ]; 
+      ];
       setGuideKey(data.join('_'))
       setGuideText(translationGuide.get(data.join('_'))?.toLowerCase() ?? '');
 
@@ -90,6 +90,56 @@ const VietMapNavigationScreen: React.FC<void> = () => {
     return f.format(time);
   }
 
+  const requestLocationPermission = async (): Promise<boolean> => {
+    if (Platform.OS === 'android') {
+      try {
+        const granted = await PermissionsAndroid.request(
+          PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+          {
+            title: 'Location Permission',
+            message: 'App needs access to location for navigation',
+            buttonNeutral: 'Ask Me Later',
+            buttonNegative: 'Cancel',
+            buttonPositive: 'OK',
+          },
+        );
+        return granted === PermissionsAndroid.RESULTS.GRANTED;
+      } catch (err) {
+        console.warn('Permission error:', err);
+        return false;
+      }
+    }
+    return true; // iOS handles permissions automatically
+  };
+
+  const getCurrentLocation = (): Promise<{lat: number, long: number}> => {
+    return new Promise((resolve, reject) => {
+      Geolocation.getCurrentPosition(
+        (position) => {
+          const location = {
+            lat: position.coords.latitude,
+            long: position.coords.longitude
+          };
+          setCurrentLocation(location);
+          resolve(location);
+        },
+        (error) => {
+          console.error('Error getting location:', error);
+          // Fallback to default location when error occurs
+          const defaultLocation = { lat: 10.704619, long: 106.800106 };
+          setCurrentLocation(defaultLocation);
+          console.log('Using default location:', defaultLocation);
+          resolve(defaultLocation);
+        },
+        { 
+          enableHighAccuracy: false, // Changed to false for faster response
+          timeout: 20000, // Increased timeout to 20 seconds
+          maximumAge: 30000 // Allow cached location up to 30 seconds
+        }
+      );
+    });
+  }
+
   const [instructionText, setInstructionText] = useState<string>("");
   const [routeProgressData, setRouteProgressData] = useState<NavigationProgressData | null>(null);
   const [guideText, setGuideText] = useState<string>("");
@@ -100,6 +150,56 @@ const VietMapNavigationScreen: React.FC<void> = () => {
   const [estimatedArrivalTime, setEstimatedArrivalTime] = useState<string>("");
   const [timeArriveRemaining, setTimeArriveRemaining] = useState<string>("");
   const [guideKey, setGuideKey] = useState<string>("");
+  const [currentLocation, setCurrentLocation] = useState<{lat: number, long: number}>({
+    lat: 10.704619, 
+    long: 106.800106
+  });
+
+  // Watch position to continuously update location
+  useEffect(() => {
+    let watchId: number;
+
+    const startLocationWatch = async () => {
+      const hasPermission = await requestLocationPermission();
+      if (hasPermission) {
+        watchId = Geolocation.watchPosition(
+          (position) => {
+            const location = {
+              lat: position.coords.latitude,
+              long: position.coords.longitude,
+            };
+            setCurrentLocation(location);
+            console.log('Location updated via watch:', location);
+          },
+          (error) => {
+            console.error('Error watching location:', error);
+          },
+          {
+            enableHighAccuracy: false,
+            distanceFilter: 10, // Update when moved 10 meters
+            interval: 5000, // Update every 5 seconds
+          }
+        );
+      } else {
+        console.log('Location permission denied');
+      }
+    };
+
+    startLocationWatch();
+
+    return () => {
+      if (watchId) {
+        Geolocation.clearWatch(watchId);
+      }
+    };
+  }, []);
+
+  // Get initial location
+  useEffect(() => {
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_ALERT_HERE", "YOUR_API_KEY_ID_HERE")
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+    getCurrentLocation();
+  }, []);
 
   const [isNavigationInprogress, setIsNavigationInprogress] = useState<boolean>(false);
   const startNavigation = routeData != null && !isNavigationInprogress ? (
@@ -121,7 +221,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
         <Text
           style={{
             textAlignVertical: 'center',
-            verticalAlign: 'middle',
+            // verticalAlign: 'middle',
             textAlign: 'center',
             color: 'black',
             fontSize: 16,
@@ -153,7 +253,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
 
           style={{
             textAlignVertical: 'center',
-            verticalAlign: 'middle',
+            // verticalAlign: 'middle',
             textAlign: 'center',
             color: 'black',
             fontSize: 16,
@@ -182,7 +282,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           <Image
 
             style={{ height: 64, width: 64 }}
-            source={require('../assets/close.png')} />
+            source={require('./../assets/close.png')} />
         </Pressable>
         <View
           style={{ flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center' }}>
@@ -213,7 +313,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           <Image
             style={{ height: 64, width: 64 }}
 
-            source={require('../assets/overview.png')} />
+            source={require('./../assets/overview.png')} />
         </Pressable>
       </View>
     </View>
@@ -224,10 +324,10 @@ const VietMapNavigationScreen: React.FC<void> = () => {
       borderRadius: 10,
       width: Dimensions.get('window').width - 20, height: 100, backgroundColor: '#2A5DFF', position: 'absolute', left: 10, top: 10, opacity: 0.7
     }}>
-      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center' ,paddingLeft: 20}}>
-        
+      <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'center', alignItems: 'center', paddingLeft: 20 }}>
+
         <Image style={{ height: 64, width: 64 }} source={Images[guideKey]} />
-        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start',paddingLeft: 20 }}>
+        <View style={{ flex: 1, flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'flex-start', paddingLeft: 20 }}>
           <Text
             style={{
               color: 'white',
@@ -251,11 +351,11 @@ const VietMapNavigationScreen: React.FC<void> = () => {
   return (
     <View style={styles.container}>
       <View style={styles.mapContainer}>
-        <VietMapNavigation
+        <VietMapNavigation 
           initialLatLngZoom={
             {
               lat: 10.704619,
-              long: 106.800106,
+              lng: 106.800106,
               zoom: 13
             }}
           navigationPadding={{
@@ -273,8 +373,8 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             getTimeArriveRemaining()
             console.log('-------------------------------')
             console.log(timeArriveRemaining)
+            console.log('onRouteProgressChange', event.nativeEvent?.data.location);
             console.log('-------------------------------')
-
             calculateTotalDistance(routeProgressData?.nativeEvent?.data?.distanceRemaining)
             setInstructionText(event?.nativeEvent?.data?.currentStepInstruction ?? '');
             let modifier = event?.nativeEvent?.data?.currentModifier
@@ -284,7 +384,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
               var data = [
                 type.replace(' ', '_'),
                 modifier.replace(' ', '_')
-              ]; 
+              ];
               getGuideText(modifier, type);
               // setInstructionImage(path);
 
@@ -306,10 +406,13 @@ const VietMapNavigationScreen: React.FC<void> = () => {
             setIsNavigationInprogress(true)
             console.log('onNavigationRunning');
           }}
-          onArrival={() => {
-            setIsNavigationInprogress(false)
-            setRouteProgressData(null)
+          onArrival={(event) => {
+            // setIsNavigationInprogress(false)
+            // setRouteProgressData(null)
+            console.log('onArrival', event.nativeEvent.data.latitude);
+            console.log('onArrival' + event.nativeEvent.data.longitude);
             console.log('You have reached your destination');
+
           }}
           onRouteBuilt={(event) => {
             setRouteData(event)
@@ -318,21 +421,17 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           onMapClick={(event) => {
             console.log('onMapClick', event.nativeEvent.data.latitude);
           }}
-          onMapLongClick={(event) => {
-            console.log('onMapLongClick', event.nativeEvent.data.latitude);
-            VietMapNavigationController.buildRoute(
-              [
-                {
-                  lat: 10.759156,
-                  long: 106.675913,
-                },
-                {
-                  lat: event.nativeEvent.data.latitude,
-                  long: event.nativeEvent.data.longitude,
-                },
-              ],
-              'motorcycle'
-            )
+          onMapLongClick={async (event) => {
+            console.log('onMapLongClick', event.nativeEvent.data);
+            VietMapNavigationController.buildRoute([
+              {
+                lat: 10.801674700004174, long: 106.63660027352597
+              },
+              {
+                lat: event.nativeEvent.data.latitude, 
+                long: event.nativeEvent.data.longitude
+              }
+            ], 'motorcycle');
           }}
           onCancelNavigation={() => {
             setIsNavigationInprogress(false)

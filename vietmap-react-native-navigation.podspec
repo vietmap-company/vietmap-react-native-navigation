@@ -39,16 +39,22 @@ Pod::Spec.new do |s|
   s.homepage     = "https://github.com/vietmap-company/vietmap-react-native-navigation"
   s.license    = { :type => "BSD-3-Clause", :file => "LICENSE" }
   s.authors      = { "VietMap" => "maps-api.support@vietmap.vn" }
-  s.platforms    = { :ios => "12.4" }
+  s.platforms    = { :ios => "13.4" }
   s.source       = { :git => "https://github.com/vietmap-company/vietmap-react-native-navigation.git", :tag => "#{s.version}" }
 
   s.source_files = "ios/**/*.{h,m,swift}"
   s.requires_arc = true
 
   s.dependency "React-Core"
-  s.dependency 'VietMapNavigation', '2.1.7'
-  s.dependency 'VietMapCoreNavigation', '2.1.5'
-  s.platform = :ios, '12.0'
+  s.dependency 'VietMapNavigation', '3.3.0'
+  s.dependency 'VietMapCoreNavigation', '3.1.0'
+  s.dependency 'VietmapTrackingSDK', '1.2.2'
   s.swift_version = '5.0'
+
+  # Fix: non-modular-include-in-framework-module with Xcode 16+/iOS 26 SDK
+  s.pod_target_xcconfig = {
+    'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
+    'ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES'
+  }
 end
 

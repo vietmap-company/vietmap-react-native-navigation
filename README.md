@@ -14,8 +14,10 @@ VietMap turn-by-turn routing based on real-time traffic for React Native. A navi
 
 ## Installation Requirements
 - You need an API key from VietMap to show the map, fetch the route, and start navigation.
-- VietMap navigation SDK only supported React Native version 0.70 and above.
-If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
+- **Compatibility**: 
+  - React Native: 0.70.0 and above (tested up to 0.80.1)
+  - React: 18.0.0 and above (tested up to 19.1.0)
+- If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
 ## Installation
 
 Using `npm`
@@ -30,10 +32,36 @@ Using `yarn`
 ```
 ---
 
+### Android configuration
+- Add below permission to `AndroidManifest.xml` file
+
+Our SDK use Service to run the navigation in the background, so you need to add the below permission to `AndroidManifest.xml` file
+
+```xml
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+```
+Add below code to AndroidManifest (for android 14 and above).
+```xml
+  <application>
+  ...
+    <!-- Add this code block -->
+    <service
+        android:name="vn.vietmap.services.android.navigation.v5.navigation.NavigationService"
+        android:foregroundServiceType="location"
+        android:exported="false">
+    </service>
+  </application>
+```
+
 ### iOS Specific Instructions
  
 Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** with your API key.
-```ruby
+```xml
   <key>VietMapURL</key>
   <string>https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_API_KEY_HERE</string>
   <key>VietMapAPIBaseURL</key>
@@ -46,6 +74,14 @@ Add the below codes to the Info.plist file. Replace the **`YOUR_API_KEY_HERE`** 
   <string>Your request location description</string>
   <key>NSLocationWhenInUseUsageDescription</key>
   <string>Your request location description</string>
+```
+
+**For Speed Alert feature:** Add background location mode to Info.plist if you want to use speed alert functionality:
+```xml
+  <key>UIBackgroundModes</key>
+  <array>
+    <string>location</string>
+  </array>
 ```
 
 Add the below code to `Podfile`
@@ -101,7 +137,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           onMilestoneEvent={(event) => {
             console.log('onMilestoneEvent', event.nativeEvent);
           }}
-          onArrival={() => {
+          onArrival={(event) => {
             alert('You have reached your destination');
           }}
           onRouteBuilt={(event) => {
@@ -255,15 +291,182 @@ This function will call while user is off-route. The location when user off-rout
 
 #### `onArrival`
 
-This function will call while user is arrival at the destination
+This function will call while user is arrival at the destination.
 
+If you are navigating to multiple waypoints, this function will call when user arrival at the every waypoint. 
+
+Please check if the navigation is finished by count the number of waypoints and the number of arrival waypoints.
+
+The SDK will automatically stop the navigation when user arrival at the last waypoint.
 #### `onNewRouteSelected?: (event: RouteData) => void;`
 
 This function will call while user select a new route, cause VietMap SDK will find one or more route between two points. When user select new route, the `RouteData` will response.
 
 
+### Speed Alert API
+
+You can control the speed alert feature using the following methods from `VietMapNavigationController`:
+
+#### Step 1: Configure Speed Alert API
+
+Before using speed alert features, you need to configure the API with your credentials. **Important: These configurations should be called in `useEffect` to ensure proper initialization:**
+
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Configure speed alert API with your credentials
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+  }, []);
+
+  return (
+    // Your navigation component JSX
+  );
+};
+```
+
+**Parameters:**
+- `apiKey`: Your VietMap API key for speed alert service
+- `apiKeyId`: Your VietMap API key ID for speed alert service
+
+#### Step 2: Configure Vehicle Information
+
+Configure the vehicle information for accurate speed alert calculations. **This should also be called in `useEffect` along with Step 1:**
+
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController, VehicleType } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Step 1: Configure speed alert API
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+    
+    // Step 2: Configure vehicle for speed alert
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+  }, []);
+
+  return (
+    // Your navigation component JSX
+  );
+};
+```
+
+**Parameters:**
+- `vehicleId`: Unique identifier for the vehicle (string)
+- `vehicleType`: Type of vehicle using `VehicleType` enum:
+  - `VehicleType.car` - Xe ô tô
+  - `VehicleType.taxi` - Xe taxi  
+  - `VehicleType.bus` - Xe bus
+  - `VehicleType.coach` - Xe khách
+  - `VehicleType.truck` - Xe tải
+  - `VehicleType.trailer` - Xe remooc
+  - `VehicleType.cycle` - Xe mô tô
+  - `VehicleType.bike` - Xe đạp
+  - `VehicleType.pedestrian` - Người đi bộ
+  - `VehicleType.semiTrailer` - Xe sơ mi rơ moóc
+- `seats`: Number of seats in the vehicle
+- `weight`: Vehicle weight in kg
+
+**Complete Example:**
+```tsx
+import React, { useEffect } from 'react';
+import { VietMapNavigationController, VehicleType } from '@vietmap/vietmap-react-native-navigation';
+
+const YourNavigationComponent = () => {
+  useEffect(() => {
+    // Step 1: Configure speed alert API with your credentials
+    VietMapNavigationController.configureAlertAPI("YOUR_API_KEY_HERE", "YOUR_API_KEY_ID_HERE");
+    
+    // Step 2: Configure vehicle - Example: truck with 5 seats and 1500kg weight
+    VietMapNavigationController.configVehicleSpeedAlert("VEHICLE_ID", VehicleType.truck, 5, 1500);
+  }, []);
+
+  return (
+    // Your VietMapNavigation component here
+  );
+};
+```
+
+> **Important Notes:**
+> - Both `configureAlertAPI` and `configVehicleSpeedAlert` must be called in `useEffect` to ensure proper initialization
+> - Call these functions before using any speed alert features
+> - These configurations are typically called once when the component mounts
+```
+
+#### Start Speed Alert
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Start speed alert manually
+VietMapNavigationController.startSpeedAlert();
+```
+
+**Speed Alert Behavior:**
+
+- **Automatic Mode (During Navigation)**: When you start navigation, speed alert will automatically run and will automatically stop when navigation ends. You don't need to manually call `startSpeedAlert()` during navigation.
+
+- **Manual Mode (Without Navigation)**: If you call `startSpeedAlert()` manually, speed alert will run even when not in navigation mode. This is useful for:
+  - Speed monitoring during free-drive mode
+  - Testing speed alert functionality
+  - Custom speed monitoring scenarios outside of navigation
+
+**Important Notes:**
+- Manual speed alert will continue running until you explicitly call `stopSpeedAlert()` or start a navigation session
+- During navigation, the system automatically manages speed alert lifecycle
+- You can check if speed alert is currently active using `isSpeedAlertActive()`
+
+#### Stop Speed Alert
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Stop speed alert
+VietMapNavigationController.stopSpeedAlert();
+```
+
+#### Check Speed Alert Status
+
+```tsx
+import { VietMapNavigationController } from '@vietmap/vietmap-react-native-navigation';
+
+// Check if speed alert is currently active
+const isActive = await VietMapNavigationController.isSpeedAlertActive();
+console.log('Speed alert is active:', isActive);
+
+// You can also use it in an async function
+const checkSpeedAlertStatus = async () => {
+  try {
+    const isActive = await VietMapNavigationController.isSpeedAlertActive();
+    if (isActive) {
+      console.log('Speed alert is currently running');
+    } else {
+      console.log('Speed alert is not active');
+    }
+  } catch (error) {
+    console.error('Error checking speed alert status:', error);
+  }
+};
+```
+
+> **Note:**
+> - You should call these methods after the map is ready (e.g. in a button or in the `onMapReady` callback).
+> - On Android and iOS, these methods will start/stop the SDK's speed alert system (voice, UI, or notification depending on platform).
+> - **iOS Requirement:** For speed alert to work properly on iOS, you must add `UIBackgroundModes` with `location` to your Info.plist file:
+> ```xml
+> <key>UIBackgroundModes</key>
+> <array>
+>   <string>location</string>
+> </array>
+> ```
+
+---
 
 ### Add a controller to control the navigation progress
+
 ```tsx
         <View style={{ flex: 1, flexDirection: 'row' }}>
           <View key={'navigation'} style={{ flex: 1 }}>
@@ -336,7 +539,30 @@ This function will call while user select a new route, cause VietMap SDK will fi
           </View>
         </View>
 ```
+### Importantly
+All function of `VietMapNavigationController` must be called after the `VietMapNavigation` component is mounted and the map is ready. If you call it before the map is ready, it will make your app crash.
 
+If you need to call the function of `VietMapNavigationController` when the map is ready, you must use the `onMapReady` callback of `VietMapNavigation` component or use it inside a button.
+```tsx
+  <VietMapNavigation
+  
+    onMapReady={() => {
+      VietMapNavigationController.buildRoute(
+        [
+          {
+            lat: 10.759156,
+            long: 106.675913,
+          },
+          {
+            lat: event.nativeEvent.data.latitude,
+            long: event.nativeEvent.data.longitude,
+          },
+        ],
+        'motorcycle'
+      )
+    }}
+  />
+```
 ### Show the instruction guide to navigation screen
 - The instruction guide text response in `onRouteProgressChange` callback, you can get it by this code:
 ```tsx
@@ -364,6 +590,53 @@ Replace all `space` with `_` and join two variables, you will get the turn direc
   /// The distance user traveled from the origin point, measured in meters 
   event?.nativeEvent?.distanceTraveled
 ```
+
+## Troubleshooting
+
+### iOS Build Error: Multiple commands produce Assets.car
+
+If you encounter this error during iOS build:
+```
+❌ error: Multiple commands produce '/Library/Developer/Xcode/DerivedData/example-hhsxpyfcdgdhlgcoumkgcndusmvl/Build/Products/Debug-iphonesimulator/example.app/Assets.car'
+```
+
+**Solution:** Add the following code to your `Podfile` in the `post_install` block:
+
+```ruby
+post_install do |installer|
+  # ...existing code...
+  
+  # Fix duplicate Assets.car issue by updating resource references
+  resources_script_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources.sh')
+  debug_input_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources-Debug-input-files.xcfilelist')
+  release_input_path = File.join(installer.sandbox.root, 'Target Support Files/Pods-example/Pods-example-resources-Release-input-files.xcfilelist')
+  
+  # Remove VietMapNavigation Assets.xcassets references from all files
+  [resources_script_path, debug_input_path, release_input_path].each do |file_path|
+    if File.exist?(file_path)
+      content = File.read(file_path)
+      # Remove lines containing VietMapNavigation Assets.xcassets
+      updated_content = content.gsub(/.*VietMapNavigation.*Assets\.xcassets.*\n/, '')
+      File.write(file_path, updated_content)
+    end
+  end
+  
+  # ...existing code...
+end
+```
+
+**Note:** Replace `Pods-example` with your actual target name if different.
+
+After adding this code, run:
+```bash
+cd ios && pod install && cd ..
+```
+
+Then clean and rebuild your project:
+```bash
+npx react-native run-ios --clean
+```
+
 ## Contributing
 
 Contributions are very welcome. Please check out the [contributing document](CONTRIBUTING.md).
