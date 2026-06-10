@@ -45,6 +45,7 @@ export interface NativeProps extends ViewProps {
   onMilestoneEvent?: DirectEventHandler<GenericEvent>;
   onUserOffRoute?: DirectEventHandler<GenericEvent>;
   onArrival?: DirectEventHandler<GenericEvent>;
+  onWaypointArrival?: DirectEventHandler<GenericEvent>;
   onNewRouteSelected?: DirectEventHandler<GenericEvent>;
   onMapClick?: DirectEventHandler<GenericEvent>;
 }

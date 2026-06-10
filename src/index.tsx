@@ -20,4 +20,9 @@ export {VietMapNavigationModule} from './native_modules';
 export * from './models/coordinates';
 export * from './typings';
 export {VietMapNavigationController, VehicleType} from './controller';
+export {VietMapMarkerView} from './components/VietMapMarkerView';
+export type {
+  VietMapMarkerViewProps,
+  MarkerCoordinate,
+} from './components/VietMapMarkerView';
 export default VietMapNavigation;

@@ -15,7 +15,7 @@ VietMap turn-by-turn routing based on real-time traffic for React Native. A navi
 ## Installation Requirements
 - You need an API key from VietMap to show the map, fetch the route, and start navigation.
 - **Compatibility**: 
-  - React Native: 0.70.0 and above (tested up to 0.80.1)
+  - React Native: 0.72.0 and above (tested up to 0.80.1)
   - React: 18.0.0 and above (tested up to 19.1.0)
   - **Architecture**: this is a Fabric (codegen) component and is built for the **New Architecture**. Keep `newArchEnabled=true` (Android `gradle.properties` / iOS `RCT_NEW_ARCH_ENABLED=1`) — the bundled example runs with the New Architecture enabled. Do not disable it: the component is not designed for the legacy Paper renderer.
 - If you're using a lower version of React Native, please [contact us](mailto:maps-api.support@vietmap.vn) for more information
@@ -113,7 +113,7 @@ const VietMapNavigationScreen: React.FC<void> = () => {
         <VietMapNavigation
           initialLatLngZoom={{
             lat: 12.895131,
-            long: 108.490272,
+            lng: 108.490272,
             zoom: 17,
           }}
           navigationPadding={{
@@ -124,13 +124,15 @@ const VietMapNavigationScreen: React.FC<void> = () => {
           }}
           navigationZoomLevel={17}
           shouldSimulateRoute={true}
-          apiKey={'YOUR_API_KEY_HERE'} 
+          apiKey={'YOUR_API_KEY_HERE'}
+          styleUrl={
+            'https://maps.vietmap.vn/maps/styles/dm/style.json?apikey=TILE_MAP_API_KEY'
+          } 
           onRouteProgressChange={(event) => { 
             console.log('onRouteProgressChange', event.nativeEvent?.data); 
           }}
-          onError={(event) => {
-            // const { message } = event.nativeEvent;
-            alert('Error: ' + event);
+          onRouteBuildFailed={() => {
+            alert('Route build failed');
           }}
           onMapMove={() => {
             console.log('onMapMove');
@@ -149,8 +151,11 @@ const VietMapNavigationScreen: React.FC<void> = () => {
 
             VietMapNavigationController.buildRoute(
               [
-                [10.759156, 106.675913],
-                [event.nativeEvent.data.latitude, event.nativeEvent.data]
+                { lat: 10.759156, long: 106.675913 },
+                {
+                  lat: event.nativeEvent.data.latitude,
+                  long: event.nativeEvent.data.longitude,
+                },
               ],
               'motorcycle'
             )
@@ -213,16 +218,30 @@ Use this when VietMap issued you **two separate keys** — one for the tilemap a
   apiKey={'YOUR_NAVIGATION_KEY'}
 ```
 
+#### `baseUrl`
+
+Custom base URL for the navigation API endpoint. Use this if your deployment points at a self-hosted or region-specific VietMap server.
+
+#### `apiKeyAlert`
+
+Speed-alert API key, equivalent to calling `VietMapNavigationController.configureAlertAPI(apiKey, apiKeyId)`. You can pass it directly as a prop instead of calling the controller method.
+
+#### `apiIDAlert`
+
+Speed-alert API key ID, used together with `apiKeyAlert`.
+
 #### `initialLatLngZoom` (**Required**)
 
 Object `InitialLatLngZoom` that contains the longitude and latitude for the initial zoom.<br>
 ```tsx
   {
     lat: number;  // -90 to 90 degrees
-    long: number; // -180 to 180 degrees
+    lng: number;  // -180 to 180 degrees
     zoom: number; // 0 to 21
   }
 ```
+
+> **Note:** `initialLatLngZoom` uses the key `lng` for longitude, while `buildRoute` coordinates use the key `long`. Make sure you use the correct key for each.
 
 **SDK will auto detect current location of user and move the map to this location, the zoom level will match with provided**
  
@@ -232,8 +251,32 @@ Boolean that controls route simulation. Set this as `true` to auto navigate whic
 
 #### `navigationZoomLevel`
 
-Zoom level while user in navigation
- 
+Zoom level while user in navigation.
+
+#### `navigationTiltAnchor`
+
+Vertical anchor (0–1) that controls the camera's tilt focal point during navigation. Useful to shift the perspective so the route ahead takes up more of the screen.
+
+#### `puckImage`
+
+URI of a custom image to use as the user-location puck (the icon that follows the user's position). Use `Image.resolveAssetSource(require('./your-icon.png')).uri` to resolve a local asset.
+
+```tsx
+  puckImage={Image.resolveAssetSource(require('./assets/navigation.png')).uri}
+```
+
+#### `puckImageWidth`
+
+Width in points/dp of the custom puck image. Defaults to the image's natural size when omitted.
+
+#### `puckImageHeight`
+
+Height in points/dp of the custom puck image. Defaults to the image's natural size when omitted.
+
+#### `puckImageRotation`
+
+Initial rotation (in degrees) applied to the custom puck image. The SDK will override this with the actual bearing during navigation.
+
 #### `style`
 
 React native style for the `VietMapNavigation` react native component
@@ -297,7 +340,7 @@ This function will call while have any voice need be play, if the mute receive `
 value, the SDK will automatically play this voice. The voice data will provide in 
 `MilestoneData` model
 
-#### `userOffRoute?: (event: LocationData) => void;`
+#### `onUserOffRoute?: (event: LocationData) => void;`
 
 This function will call while user is off-route. The location when user off-route will contain in `LocationData` model
 
@@ -305,11 +348,12 @@ This function will call while user is off-route. The location when user off-rout
 
 This function will call while user is arrival at the destination.
 
-If you are navigating to multiple waypoints, this function will call when user arrival at the every waypoint. 
-
-Please check if the navigation is finished by count the number of waypoints and the number of arrival waypoints.
-
 The SDK will automatically stop the navigation when user arrival at the last waypoint.
+
+#### `onWaypointArrival?: (event: LocationData) => void;`
+
+This function is called each time the user arrives at an **intermediate waypoint** (not the final destination). Use this to distinguish waypoint arrivals from the final `onArrival` event when navigating multi-leg routes.
+
 #### `onNewRouteSelected?: (event: RouteData) => void;`
 
 This function will call while user select a new route, cause VietMap SDK will find one or more route between two points. When user select new route, the `RouteData` will response.
@@ -406,7 +450,6 @@ const YourNavigationComponent = () => {
 > - Both `configureAlertAPI` and `configVehicleSpeedAlert` must be called in `useEffect` to ensure proper initialization
 > - Call these functions before using any speed alert features
 > - These configurations are typically called once when the component mounts
-```
 
 #### Start Speed Alert
 
@@ -514,7 +557,7 @@ const checkSpeedAlertStatus = async () => {
             <Pressable
               style={buttonStyle}
 
-              onPress={() => VietMapNavigationController.cancelNavigation()}
+              onPress={() => VietMapNavigationController.finishNavigation()}
             >
               <Text >STOP_NAVIGATION</Text>
             </Pressable>
@@ -602,6 +645,102 @@ Replace all `space` with `_` and join two variables, you will get the turn direc
   /// The distance user traveled from the origin point, measured in meters 
   event?.nativeEvent?.distanceTraveled
 ```
+
+---
+
+## VietMapMarkerView
+
+`VietMapMarkerView` lets you place any React Native view as a marker directly on the navigation map. The marker stays pinned to its geographic coordinate as the camera moves.
+
+> **Note:** The marker is display-only — it does not receive tap/press events. On Android the native side reparents the marker view into the map's view hierarchy (so the map keeps it positioned across camera moves), which takes it out of React Native's touch system; touchables placed inside the marker content won't fire. To add/remove markers, manage the array you render from JS (e.g. add on `onMapClick`, remove via your own UI/button).
+
+### Import
+
+```tsx
+import { VietMapMarkerView } from '@vietmap/vietmap-react-native-navigation';
+```
+
+### Basic Usage
+
+```tsx
+<VietMapNavigation ... >
+  {/* VietMapMarkerView must be rendered as children of VietMapNavigation */}
+</VietMapNavigation>
+
+{/* Place a marker on the map */}
+<VietMapMarkerView
+  coordinate={[106.675913, 10.759156]}  // [longitude, latitude]
+  anchor={{ x: 0.5, y: 1 }}
+>
+  <Image source={require('./assets/location.png')} style={{ width: 28, height: 28 }} />
+</VietMapMarkerView>
+```
+
+### Multiple Markers Example
+
+```tsx
+const [markers, setMarkers] = useState<{ id: string; lat: number; lng: number }[]>([]);
+const markerIdRef = useRef(0);
+
+// Drop a marker on every map tap. Give each a stable `id` (not the array index) so React keeps
+// each marker's identity when the list changes.
+<VietMapNavigation
+  ...
+  onMapClick={(event) => {
+    const { latitude, longitude } = event.nativeEvent.data;
+    const id = `marker-${markerIdRef.current++}`;
+    setMarkers(prev => [...prev, { id, lat: latitude, lng: longitude }]);
+  }}
+/>
+
+{markers.map((m, index) => (
+  <VietMapMarkerView
+    key={m.id}
+    id={m.id}
+    coordinate={[m.lng, m.lat]}
+    anchor={{ x: 0.5, y: 1 }}
+  >
+    <View style={{ width: 28, height: 28, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ position: 'absolute', top: 0, color: 'white', fontWeight: 'bold' }}>
+        {index + 1}
+      </Text>
+      <Image source={require('./assets/location.png')} style={{ width: 28, height: 25 }} />
+    </View>
+  </VietMapMarkerView>
+))}
+
+// Remove all markers
+setMarkers([]);
+// Remove one marker by id
+setMarkers(prev => prev.filter(m => m.id !== someId));
+```
+
+### Props
+
+#### `coordinate` (**Required**)
+
+The geographic position of the marker. Accepts either a `[longitude, latitude]` tuple or an object `{ latitude, longitude }`.
+
+```tsx
+coordinate={[106.675913, 10.759156]}        // tuple form — [lng, lat]
+coordinate={{ latitude: 10.759156, longitude: 106.675913 }}  // object form
+```
+
+> **Note:** The tuple form uses `[longitude, latitude]` order (GeoJSON convention).
+
+#### `anchor`
+
+Controls which point of the marker view sits on the coordinate. Values are in `[0..1]` from the view's top-left corner. Default: `{ x: 0.5, y: 1 }` (bottom-center — a pin tip touches the coordinate).
+
+#### `id`
+
+Optional stable string ID for the marker. Auto-generated when omitted. Pass your own stable id and use it as the React `key` so the right marker is removed when you filter the list.
+
+#### `children` (**Required**)
+
+Exactly one React Native element to render as the marker content. Can be a container `<View>` with multiple children inside.
+
+---
 
 ## Troubleshooting
 

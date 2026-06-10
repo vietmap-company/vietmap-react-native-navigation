@@ -44,7 +44,10 @@ extension UIView {
             guard let routes = routes,
                   let current = routes.first else { navigationMapView?.removeRoutes(); return }
             navigationMapView?.showRoutes(routes)
+            ensureRouteLayersAboveRoads()
             navigationMapView?.showWaypoints(current)
+            // showRoutes/showWaypoints can clear annotations — re-add user markers.
+            VietMapMarkerBridge.reAddAnnotations()
         }
     }
     var embedded: Bool
@@ -440,10 +443,86 @@ extension UIView {
     }
 
     
+    // MARK: - route layer ordering
+    /// Keep the route line above road/fill layers but below labels and POI icons.
+    ///
+    /// The SDK inserts the route layers below the `vmadmin_province` layer, which in
+    /// some styles sits above the label/POI layers — the route then covers street
+    /// names and icons. This re-positions (or creates) the route layers below the
+    /// first symbol layer so they render in the correct order.
+    private func ensureRouteLayersAboveRoads() {
+        guard let style = navigationMapView?.style else { return }
+
+        let routeLayerId = "routeLayer"
+        let routeCasingLayerId = "routeLayerCasing"
+        let routeSourceId = "routeSource"
+        let routeCasingSourceId = "routeCasingSource"
+
+        // The reference anchor: route layers must sit below the first symbol layer
+        // (labels/POI icons). If the style has no symbol layer, leave SDK ordering as-is.
+        guard let firstSymbolLayer = style.layers.first(where: { $0 is MLNSymbolStyleLayer }) else { return }
+
+        // Case 1: the SDK already created the route layers — re-position them below
+        // the first symbol layer (removing then re-inserting preserves their styling).
+        if let line = style.layer(withIdentifier: routeLayerId),
+           let lineCasing = style.layer(withIdentifier: routeCasingLayerId) {
+            style.removeLayer(line)
+            style.removeLayer(lineCasing)
+            style.insertLayer(lineCasing, below: firstSymbolLayer)
+            style.insertLayer(line, above: lineCasing)
+            return
+        }
+
+        // Case 2: route layers don't exist — create and insert them (matching the
+        // SDK's routeStyleLayer / routeCasingStyleLayer styling).
+        guard let routeSource = style.source(withIdentifier: routeSourceId) as? MLNShapeSource else { return }
+
+        let line = MLNLineStyleLayer(identifier: routeLayerId, source: routeSource)
+        line.lineWidth = NSExpression(
+            forMLNInterpolating: .zoomLevelVariable,
+            curveType: .linear,
+            parameters: nil,
+            stops: NSExpression(forConstantValue: MBRouteLineWidthByZoomLevel)
+        )
+        line.lineColor = NSExpression(
+            forConditional: NSPredicate(format: "isAlternateRoute == true"),
+            trueExpression: NSExpression(forConstantValue: navigationMapView?.routeLineAlternativeColor ?? UIColor.gray),
+            falseExpression: NSExpression(forConstantValue: navigationMapView?.routeLineColor ?? UIColor(red: 0.214, green: 0.559, blue: 0.985, alpha: 1))
+        )
+        line.lineOpacity = NSExpression(forConstantValue: 1.0)
+        line.lineCap = NSExpression(forConstantValue: "round")
+        line.lineJoin = NSExpression(forConstantValue: "round")
+
+        let lineCasing: MLNLineStyleLayer
+        if let casingSource = style.source(withIdentifier: routeCasingSourceId) as? MLNShapeSource {
+            lineCasing = MLNLineStyleLayer(identifier: routeCasingLayerId, source: casingSource)
+        } else {
+            lineCasing = MLNLineStyleLayer(identifier: routeCasingLayerId, source: routeSource)
+        }
+        lineCasing.lineWidth = NSExpression(
+            forMLNInterpolating: .zoomLevelVariable,
+            curveType: .linear,
+            parameters: nil,
+            stops: NSExpression(forConstantValue: MBRouteLineWidthByZoomLevel.multiplied(by: 1.5))
+        )
+        lineCasing.lineColor = NSExpression(
+            forConditional: NSPredicate(format: "isAlternateRoute == true"),
+            trueExpression: NSExpression(forConstantValue: navigationMapView?.routeLineCasingAlternativeColor ?? UIColor.gray),
+            falseExpression: NSExpression(forConstantValue: navigationMapView?.routeLineCasingColor ?? UIColor(red: 0.149, green: 0.388, blue: 0.686, alpha: 1))
+        )
+        lineCasing.lineOpacity = NSExpression(forConstantValue: 1.0)
+        lineCasing.lineCap = NSExpression(forConstantValue: "round")
+        lineCasing.lineJoin = NSExpression(forConstantValue: "round")
+
+        style.insertLayer(lineCasing, below: firstSymbolLayer)
+        style.insertLayer(line, above: lineCasing)
+    }
+
     // MARK: - reroute
     @objc func rerouted(_ notification: NSNotification) {
         guard let navigationMapView = self.navigationMapView else {return}
         navigationMapView.showRoutes([(routeController?.routeProgress.route)!])
+        ensureRouteLayersAboveRoads()
         navigationMapView.tracksUserCourse = true
         navigationMapView.recenterMap()
         if let userInfo = notification.object as? RouteController {
@@ -479,6 +558,10 @@ extension UIView {
         mapView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
         mapView.delegate = self
         mapView.navigationMapDelegate = self
+        // Publish the map so <VietMapMarkerView> components (created independently by RN) can attach
+        // themselves as annotations, then attach any markers that mounted before the map was ready.
+        VietMapMarkerBridge.currentMapView = mapView
+        VietMapMarkerBridge.reAddAnnotations()
         mapView.showsUserLocation = true
         mapView.userTrackingMode = .follow
         mapView.logoView.isHidden = false
@@ -567,6 +650,15 @@ extension UIView {
               let location = currentLocation,
               let puck = navigationMapView.userCourseView else { return }
         puck.center = navigationMapView.convert(location.coordinate, toPointTo: navigationMapView)
+    }
+
+    // Return the hosted React view for our markers; nil for everything else so the SDK keeps its
+    // default rendering for waypoints / built-in annotations.
+    func mapView(_ mapView: MLNMapView, viewFor annotation: MLNAnnotation) -> MLNAnnotationView? {
+        if let marker = annotation as? VietMapMarkerView {
+            return marker.getAnnotationView()
+        }
+        return nil
     }
 
     // MARK: - define response

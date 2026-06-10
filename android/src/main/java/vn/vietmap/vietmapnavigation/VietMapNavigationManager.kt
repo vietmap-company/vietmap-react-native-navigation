@@ -60,6 +60,7 @@ class VietMapNavigationManager(mCallerContext: ReactApplicationContext) :
             "speechAnnouncement" to MapBuilder.of("registrationName", "speechAnnouncement"),
             "bannerInstruction" to MapBuilder.of("registrationName", "bannerInstruction"),
             "onArrival" to MapBuilder.of("registrationName", "onArrival"),
+            "onWaypointArrival" to MapBuilder.of("registrationName", "onWaypointArrival"),
             "failedToReroute" to MapBuilder.of("registrationName", "failedToReroute"),
             "rerouteAlong" to MapBuilder.of("registrationName", "rerouteAlong"),
             "onMapMove" to MapBuilder.of("registrationName", "onMapMove"),

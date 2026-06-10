@@ -101,9 +101,12 @@ import vn.vietmap.vietmapsdk.style.sources.GeoJsonSource
 import com.vietmap.trackingsdk.VietmapTrackingSDK
 import com.vietmap.trackingsdk.VehicleType
 import kotlin.math.PI
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import androidx.core.graphics.scale
+import androidx.core.graphics.createBitmap
 
 
 class VietMapNavigationView(
@@ -118,8 +121,11 @@ class VietMapNavigationView(
     private var routeClicked: Boolean = false
     private var locationEngine: LocationEngine? = null
     private var navigationMapRoute: NavigationMapRoute? = null
+    private var belowLayerId: String? = null
+    private var markerViewManager: vn.vietmap.vietmapnavigation.markers.MarkerViewManager? = null
     private var directionsRoutes: List<DirectionsRoute>? = null
-    private var distanceToOffRoute = 30 //distance in meter
+    private var distanceToOffRoute =
+        50 //distance in meter (matches Flutter; 30 was too trigger-happy)
     private val navigationOptions =
         VietmapNavigationOptions.builder().maxTurnCompletionOffset(30.0).maneuverZoneRadius(40.0)
             .maximumDistanceOffRoute(50.0).deadReckoningTimeInterval(5.0)
@@ -143,6 +149,7 @@ class VietMapNavigationView(
     private var routeUtils = RouteUtils()
     private val snapEngine = SnapToRoute()
     private var apikey: String? = null
+
     // True once a custom styleUrl prop has been supplied, so setApiKey stops overwriting mapStyleURL.
     private var hasCustomStyleUrl: Boolean = false
     private var apiKeyAlert: String? = null
@@ -171,6 +178,23 @@ class VietMapNavigationView(
     private var bearing = 0.0
     private var tilt = 0.0
     private var currentCenterPoint: CurrentCenterPoint? = null
+
+    // --- Off-route tracking (ported from Flutter FlutterMapViewFactory) ---
+    private var firstOffRoutePoint: Location? = null
+    private var isUserCurrentlyOffRoute = false
+    private var consecutiveOnRouteCount = 0
+
+    // --- Multi-waypoint arrival, distance-based & single-fire (ported from Flutter) ---
+    private var completedWaypointIndex = 0
+    private var pendingArrivalPoint: Point? = null
+    private var lastArrivedLegIndex = -1
+
+    // --- GPS smoothing + snapped/raw blend (ported from Flutter GpsTracker, minus stuck/wrong-way) ---
+    private val kalmanLat = GpsKalmanFilter()
+    private val kalmanLng = GpsKalmanFilter()
+    private val kalmanBearing = GpsKalmanFilter(0.001, 0.01)
+    private var bearingDivergenceCount = 0
+    private var isBearingDiverging = false
 
     private var shouldSimulateRoute = false
     private var arrivalIndex = 0
@@ -209,6 +233,20 @@ class VietMapNavigationView(
 
     companion object {
         private const val TAG = "VietMapNavigationView"
+
+        // --- Navigation tuning constants (ported from Flutter models/Constant.kt) ---
+        // Within this distance the puck stays 100% snapped; beyond it we blend toward raw GPS.
+        private const val OFF_ROUTE_SNAP_START_DISTANCE = 10.0
+        // Bearing divergence (raw vs snapped) above this for N ticks → treat as diverging (blend toward raw).
+        private const val BEARING_DIVERGENCE_THRESHOLD = 60.0
+        private const val BEARING_DIVERGENCE_CONSECUTIVE_COUNT = 4
+        // Skip divergence detection when GPS accuracy is worse than this (metres) — too noisy to trust.
+        private const val WRONG_WAY_MAX_ACCURACY = 15.0f
+        // Consecutive on-route ticks needed to clear an active off-route state.
+        private const val REQUIRED_ON_ROUTE_COUNT = 5
+        // Fire arrival when within this many metres of the arrive maneuver.
+        private const val ARRIVAL_RADIUS = 15.0
+
         var instance: VietMapNavigationView? = null
 
         //Config
@@ -419,13 +457,14 @@ class VietMapNavigationView(
                             vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
                         )
 
+                        belowLayerId = vietMapGL?.style?.let { findFirstSymbolLayerId(it) }
                         navigationMapRoute =
                             NavigationMapRoute(
                                 navigation,
                                 binding.mapView!!,
                                 vietMapGL!!,
                                 routeStyleRes,
-                                "vmadmin_province"
+                                belowLayerId
                             )
                     }
 
@@ -621,13 +660,14 @@ class VietMapNavigationView(
             vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
         )
 
+        belowLayerId = vietMapGL?.style?.let { findFirstSymbolLayerId(it) }
         navigationMapRoute =
             NavigationMapRoute(
                 navigation,
                 binding.mapView!!,
                 vietMapGL!!,
                 routeStyleRes,
-                "vmadmin_province"
+                belowLayerId
             )
 
         navigationMapRoute?.setOnRouteSelectionChangeListener {
@@ -765,14 +805,10 @@ class VietMapNavigationView(
                 }
 
                 val scaledBitmap = if (puckImageWidth > 0 && puckImageHeight > 0) {
-                    Bitmap.createScaledBitmap(bitmap, puckImageWidth, puckImageHeight, true)
+                    bitmap.scale(puckImageWidth, puckImageHeight)
                 } else bitmap
                 val finalBitmap = if (puckImageRotation != 0f) {
-                    val result = Bitmap.createBitmap(
-                        scaledBitmap.width,
-                        scaledBitmap.height,
-                        Bitmap.Config.ARGB_8888
-                    )
+                    val result = createBitmap(scaledBitmap.width, scaledBitmap.height)
                     val matrix = android.graphics.Matrix()
                     matrix.postRotate(
                         puckImageRotation,
@@ -820,6 +856,34 @@ class VietMapNavigationView(
         drawable.setBounds(0, 0, canvas.width, canvas.height)
         drawable.draw(canvas)
         return bmp
+    }
+
+    /**
+     * Find the first SymbolLayer ID in the style.
+     * Route layers are inserted below this layer so they render above
+     * road/fill layers but below labels and POI icons. Returns null when the
+     * style has no symbol layer, letting the SDK fall back to its own ordering.
+     */
+    private fun findFirstSymbolLayerId(style: Style): String? {
+        for (layer in style.layers) {
+            if (layer is SymbolLayer) {
+                return layer.id
+            }
+        }
+        return null
+    }
+
+    /**
+     * Lazily create the MarkerViewManager bound to this navigation map. Returns null until the
+     * map (vietMapGL) is ready. VietMapMarkerView components register their hosted child views
+     * here; the plugin keeps each view positioned at its coordinate across camera moves.
+     */
+    fun getOrCreateMarkerViewManager(): vn.vietmap.vietmapnavigation.markers.MarkerViewManager? {
+        if (markerViewManager == null && ::vietMapGL.isInitialized) {
+            markerViewManager =
+                vn.vietmap.vietmapnavigation.markers.MarkerViewManager(binding.mapView, vietMapGL)
+        }
+        return markerViewManager
     }
 
     private fun addDestinationIconSymbolLayer(loadedMapStyle: Style) {
@@ -915,17 +979,18 @@ class VietMapNavigationView(
                     navigationMapRoute?.removeRoute()
                 } else {
                     val routeStyleRes = ThemeSwitcher.retrieveNavigationViewStyle(
-                        binding.mapView!!.context,
+                        binding.mapView.context,
                         vn.vietmap.services.android.navigation.R.style.NavigationMapRoute
                     )
 
+                    belowLayerId = vietMapGL.style?.let { findFirstSymbolLayerId(it) }
                     navigationMapRoute =
                         NavigationMapRoute(
                             navigation,
-                            binding.mapView!!,
-                            vietMapGL!!,
+                            binding.mapView,
+                            vietMapGL,
                             routeStyleRes,
-                            "vmadmin_province"
+                            belowLayerId
                         )
                 }
 
@@ -959,10 +1024,8 @@ class VietMapNavigationView(
 
     fun buildRoute(data: Any?) {
         if (data != null) {
-
-            Log.d("points", (data as Map<*, *>)["points"].toString())
+            val points = (data as Map<*,*>)["points"] as ReadableArray
             profile = data["vehicle"].toString()
-            val points = data["points"] as ReadableArray
 
             startRoute(
                 points,
@@ -983,6 +1046,13 @@ class VietMapNavigationView(
             isOverviewing = false
             isNavigationCanceled = false
 
+            // Fresh navigation session: reset GPS smoothing, off-route and arrival bookkeeping.
+            resetGpsTracker()
+            resetTrackingOffRouteState()
+            pendingArrivalPoint = null
+            lastArrivedLegIndex = -1
+            completedWaypointIndex = 0
+
             navigation = VietmapNavigation(
                 context, navigationOptions, locationEngine!!
             )
@@ -998,6 +1068,11 @@ class VietMapNavigationView(
                     }
                 }
                 isRunning = true
+                // Mirror the Flutter SDK's navigation camera model: detach the LocationComponent's own
+                // engine and feed the puck manually via forceLocationUpdate (onProgressChange), while
+                // the built-in TRACKING_GPS camera (set by recenter() below) follows the puck smoothly.
+                // We do NOT drive the camera per-tick anymore — that manual moveCamera fought the
+                // LocationComponent and caused the jitter / unresponsive recenter.
                 vietMapGL.locationComponent.locationEngine = null
                 navigation?.addNavigationEventListener(this)
                 navigation?.addFasterRouteListener(this)
@@ -1031,10 +1106,19 @@ class VietMapNavigationView(
             tilt = 0.0
             isNavigationCanceled = true
 
+            // Off-route + arrival state belong to the route being left; a reroute restarts leg
+            // indexing from 0, so always clear the pending arrival anchor.
+            resetGpsTracker()
+            resetTrackingOffRouteState()
+            pendingArrivalPoint = null
+            lastArrivedLegIndex = -1
+
             if (!isOffRouted) {
                 isNavigationInProgress = false
 //                moveCameraToOriginOfRoute()
                 overViewRoute()
+                // Real finish (not a reroute): the next session starts waypoint counting fresh.
+                completedWaypointIndex = 0
             }
 
             if (currentRoute != null) {
@@ -1073,11 +1157,6 @@ class VietMapNavigationView(
     }
 
     override fun onProgressChange(location: Location, routeProgress: RouteProgress) {
-
-        var currentSpeed = location.speed
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            currentSpeed = location.speedAccuracyMetersPerSecond
-        }
         if (!isNavigationCanceled) {
             try {
                 val noRoutes: Boolean = directionsRoutes?.isEmpty() ?: true
@@ -1111,27 +1190,50 @@ class VietMapNavigationView(
                             snappedLocation.bearing.toDouble()
                         )
 
+                        // Route progress is reported with the snapped location (accurate for the SDK).
                         val progressEvent =
                             VietMapRouteProgressEvent(routeProgress, location, snappedLocation)
                         sendRouteProgressEvent(progressEvent)
+
+                        // Distance from raw GPS to the snapped point — drives both the off-route
+                        // recovery counter and the snapped/raw blend below.
+                        val distanceFromRoute = calculateDistanceBetween2Point(location, snappedLocation)
+
+                        // If we were flagged off-route but are snapping close again, count consecutive
+                        // on-route ticks and clear the off-route state once stable (ported from Flutter).
+                        if (isUserCurrentlyOffRoute && firstOffRoutePoint != null && distanceFromRoute < distanceToOffRoute) {
+                            consecutiveOnRouteCount++
+                            if (consecutiveOnRouteCount >= REQUIRED_ON_ROUTE_COUNT) {
+                                resetTrackingOffRouteState()
+                            }
+                        } else {
+                            consecutiveOnRouteCount = 0
+                        }
+
+                        // Track bearing divergence (blend decision only — no wrong-way event), then blend
+                        // between snapped and Kalman-smoothed raw GPS for a smooth off-route transition.
+                        detectBearingDivergence(location, snappedLocation, location.accuracy)
+                        val displayLocation = blendLocation(location, snappedLocation, distanceFromRoute)
+
                         currentCenterPoint =
                             CurrentCenterPoint(
-                                snappedLocation.latitude,
-                                snappedLocation.longitude,
-                                snappedLocation.bearing
+                                displayLocation.latitude,
+                                displayLocation.longitude,
+                                displayLocation.bearing
                             )
                         if (!isOverviewing) {
                             this.routeProgress = routeProgress
-                            if (currentSpeed > 0) {
-                                moveCamera(
-                                    LatLng(snappedLocation.latitude, snappedLocation.longitude),
-                                    snappedLocation.bearing,
-                                    zoomLevel = navigationZoomLevel
-                                )
-                            }
                         }
 
-                        vietMapGL.locationComponent.forceLocationUpdate(snappedLocation)
+                        // Feed the puck on the UI thread. With TRACKING_GPS active, forceLocationUpdate
+                        // now drives the tracking camera, which calls map APIs (getMetersPerPixelAtLatitude)
+                        // that MUST run on the UI thread — onProgressChange can fire off the main thread.
+                        context.currentActivity?.runOnUiThread {
+                            vietMapGL.locationComponent.forceLocationUpdate(displayLocation)
+                        }
+
+                        // Distance-based, single-fire arrival (replaces the old milestone isArrivalEvent path).
+                        checkPendingArrival(location, routeProgress)
                     }
 
 //                    if (shouldSimulateRoute && !isDisposed && !isBuildingRoute) {
@@ -1149,6 +1251,12 @@ class VietMapNavigationView(
     }
 
     override fun userOffRoute(location: Location) {
+        // Record the first off-route point (unless on a roundabout, where the SDK's snap is noisy).
+        // checkIfUserOffRoute measures from this anchor so a single GPS blip doesn't trigger a reroute.
+        if (firstOffRoutePoint == null && !isRoundabout()) {
+            firstOffRoutePoint = location
+            isUserCurrentlyOffRoute = true
+        }
         if (checkIfUserOffRoute(location)) {
             speechPlayer!!.onOffRoute()
             sendEvent(
@@ -1211,13 +1319,31 @@ class VietMapNavigationView(
     private fun checkIfUserOffRoute(location: Location): Boolean {
         if (routeProgress?.currentStepPoints() != null) {
             val snapLocation: Location = snapEngine.getSnappedLocation(location, routeProgress)
-            val distance: Double = calculateDistanceBetween2Point(location, snapLocation)
-            return distance > this.distanceToOffRoute && checkIfUserIsDrivingToOtherRoute(location)
-//                && areBearingsClose(
-//            location.bearing.toDouble(), snapLocation.bearing.toDouble()
-//        )
+            // Measure from the first off-route anchor (ported from Flutter) so a momentary blip back
+            // toward the route doesn't keep resetting the distance and suppress a genuine reroute.
+            val distance: Double = calculateDistanceBetween2Point(location, firstOffRoutePoint ?: snapLocation)
+            // The bearing-divergence guard (ported from Flutter) is what stops spurious reroutes:
+            // during simulation a transient snap error near turns can push `distance` over the
+            // threshold for one tick, but the heading still matches the route — so it is NOT off-route.
+            // Without this guard those blips rerouted and restarted the replay engine from the origin.
+            return distance > this.distanceToOffRoute
+                    && checkIfUserIsDrivingToOtherRoute(location)
+                    && areBearingsDiverging(
+                location.bearing.toDouble(),
+                snapLocation.bearing.toDouble()
+            )
         }
         return false
+    }
+
+    private fun areBearingsDiverging(
+        bearing1: Double,
+        bearing2: Double,
+        threshold: Double = 30.0
+    ): Boolean {
+        val diff = abs(bearing1 - bearing2) % 360
+        val shortestAngle = if (diff > 180) 360 - diff else diff
+        return shortestAngle >= threshold
     }
 
     private fun checkIfUserIsDrivingToOtherRoute(location: Location): Boolean {
@@ -1273,6 +1399,128 @@ class VietMapNavigationView(
         return radius * c
     }
 
+    // ====== GPS smoothing & snapped/raw blend (ported from Flutter GpsTracker) ======
+
+    /**
+     * Tracks whether the raw GPS bearing is diverging from the snapped route bearing for several
+     * consecutive ticks. Used only to decide the blend below — NOT to raise a wrong-way event.
+     */
+    private fun detectBearingDivergence(rawLocation: Location, snappedLocation: Location, gpsAccuracy: Float): Boolean {
+        if (gpsAccuracy > WRONG_WAY_MAX_ACCURACY) {
+            bearingDivergenceCount = 0
+            isBearingDiverging = false
+            return false
+        }
+        val diff = abs(rawLocation.bearing.toDouble() - snappedLocation.bearing.toDouble()) % 360.0
+        val shortestAngle = if (diff > 180.0) 360.0 - diff else diff
+        if (shortestAngle > BEARING_DIVERGENCE_THRESHOLD) {
+            bearingDivergenceCount++
+        } else {
+            bearingDivergenceCount = 0
+        }
+        isBearingDiverging = bearingDivergenceCount >= BEARING_DIVERGENCE_CONSECUTIVE_COUNT
+        return isBearingDiverging
+    }
+
+    /**
+     * Returns the snapped location while on-route, or a Kalman-smoothed raw GPS location once the
+     * user is far enough off-route / diverging — giving a smooth transition instead of the puck
+     * snapping back and forth.
+     */
+    private fun blendLocation(rawLocation: Location, snappedLocation: Location, distanceFromRoute: Double): Location {
+        if (!isBearingDiverging && distanceFromRoute <= OFF_ROUTE_SNAP_START_DISTANCE) {
+            return snappedLocation
+        }
+        return getSmoothedLocation(rawLocation)
+    }
+
+    private fun getSmoothedLocation(rawLocation: Location): Location {
+        val smoothed = Location(rawLocation)
+        smoothed.latitude = kalmanLat.update(rawLocation.latitude)
+        smoothed.longitude = kalmanLng.update(rawLocation.longitude)
+        smoothed.bearing = kalmanBearing.update(rawLocation.bearing.toDouble()).toFloat()
+        smoothed.speed = rawLocation.speed
+        smoothed.time = rawLocation.time
+        smoothed.accuracy = rawLocation.accuracy
+        return smoothed
+    }
+
+    /** Reset the Kalman filters and divergence state — call on start / reroute. */
+    private fun resetGpsTracker() {
+        kalmanLat.reset()
+        kalmanLng.reset()
+        kalmanBearing.reset()
+        bearingDivergenceCount = 0
+        isBearingDiverging = false
+    }
+
+    // ====== Distance-based, single-fire arrival (ported from Flutter) ======
+
+    /**
+     * Fires arrival exactly once per leg when the user gets within [ARRIVAL_RADIUS] of the armed
+     * arrive maneuver (see onMilestoneEvent). On the final leg sends ON_ARRIVAL and finishes; on an
+     * intermediate waypoint sends ON_WAYPOINT_ARRIVAL and advances. Replaces the old isArrivalEvent
+     * path that could double-fire.
+     */
+    private fun checkPendingArrival(location: Location, routeProgress: RouteProgress) {
+        val arrivalPoint = pendingArrivalPoint ?: return
+        if (!isNavigationInProgress || isNavigationCanceled) return
+
+        val arrivalLocation = Location("").apply {
+            latitude = arrivalPoint.latitude()
+            longitude = arrivalPoint.longitude()
+        }
+        val distance = calculateDistanceBetween2Point(location, arrivalLocation)
+        if (distance <= ARRIVAL_RADIUS) {
+            pendingArrivalPoint = null
+            lastArrivedLegIndex = routeProgress.legIndex()
+            val isFinalLeg = routeUtils.isLastLeg(routeProgress)
+            if (isFinalLeg) {
+                try {
+                    vietMapGL.locationComponent.locationEngine = locationEngine
+                } catch (_: Exception) {
+                }
+                val data = JSONObject()
+                data.put("latitude", arrivalPoint.latitude())
+                data.put("longitude", arrivalPoint.longitude())
+                sendEvent(VietMapEvents.ON_ARRIVAL, data)
+                if (listNavigationRemainingPoints.isNotEmpty()) {
+                    listNavigationRemainingPoints.removeAt(0)
+                }
+                finishNavigation()
+            } else {
+                completedWaypointIndex++
+                if (listNavigationRemainingPoints.isNotEmpty()) {
+                    listNavigationRemainingPoints.removeAt(0)
+                }
+                sendEvent(
+                    VietMapEvents.ON_WAYPOINT_ARRIVAL,
+                    JSONObject("{\"latitude\":${arrivalPoint.latitude()},\"longitude\":${arrivalPoint.longitude()}}")
+                )
+            }
+        }
+    }
+
+    // ====== Off-route helpers (ported from Flutter) ======
+
+    private fun isRoundabout(): Boolean {
+        val legProgress = routeProgress?.currentLegProgress() ?: return false
+        val currentType = legProgress.currentStep()?.maneuver()?.type()
+        return isRoundaboutManeuver(currentType)
+    }
+
+    private fun isRoundaboutManeuver(type: String?): Boolean {
+        if (type == null) return false
+        return type.contains("roundabout", ignoreCase = true) ||
+                type.contains("rotary", ignoreCase = true)
+    }
+
+    private fun resetTrackingOffRouteState() {
+        firstOffRoutePoint = null
+        isUserCurrentlyOffRoute = false
+        consecutiveOnRouteCount = 0
+    }
+
     override fun onMilestoneEvent(
         routeProgress: RouteProgress,
         instruction: String,
@@ -1281,29 +1529,19 @@ class VietMapNavigationView(
         if (voiceInstructionsEnabled) {
             playVoiceAnnouncement(milestone)
         }
-        if (routeUtils.isArrivalEvent(routeProgress, milestone) && isNavigationInProgress) {
-            val arrivalLatLng =
-                routeProgress.currentLegProgress()?.currentStep()?.maneuver()?.location()
-            val data: JSONObject = JSONObject()
-            arrivalLatLng?.let {
-                data.put("latitude", arrivalLatLng.latitude())
-                data.put("longitude", arrivalLatLng.longitude())
+        // Arm arrival detection (ported from Flutter): capture the "arrive" maneuver location so
+        // onProgressChange (checkPendingArrival) fires arrival exactly once when within ARRIVAL_RADIUS.
+        // Guarded by lastArrivedLegIndex so we don't re-arm a leg whose arrival already fired.
+        val currentLegIdx = routeProgress.legIndex()
+        if (pendingArrivalPoint == null && isNavigationInProgress && currentLegIdx > lastArrivedLegIndex) {
+            val legProgress = routeProgress.currentLegProgress()
+            val upComingStep = legProgress?.upComingStep()
+            val currentStep = legProgress?.currentStep()
+            if (upComingStep?.maneuver()?.type()?.contains("arrive") == true) {
+                pendingArrivalPoint = upComingStep.maneuver().location()
+            } else if (currentStep?.maneuver()?.type()?.contains("arrive") == true) {
+                pendingArrivalPoint = currentStep.maneuver().location()
             }
-            sendEvent(VietMapEvents.ON_ARRIVAL, data = data)
-
-            if (listNavigationRemainingPoints.size == 1) {
-
-
-                finishNavigation()
-                try {
-                    vietMapGL.locationComponent.locationEngine = locationEngine
-                } catch (_: Exception) {
-                }
-            }
-            listNavigationRemainingPoints.removeAt(0)
-            Log.d("DataList---------------", listNavigationRemainingPoints.size.toString())
-            Log.d("Datalist", listNavigationRemainingPoints.toList().toString())
-
         }
         if (!isNavigationCanceled) {
             sendEvent(VietMapEvents.MILESTONE_EVENT, JSONObject().put("instruction", instruction))
@@ -1345,6 +1583,9 @@ class VietMapNavigationView(
 
     override fun onNavigationFinished() {
         vietMapGL.locationComponent.locationEngine = locationEngine
+        // Navigation owned the camera (CameraMode.NONE); hand it back to the LocationComponent
+        // so the puck is followed again now that the raw location engine is re-attached.
+        vietMapGL.locationComponent.cameraMode = CameraMode.TRACKING_GPS_NORTH
         sendEvent(VietMapEvents.NAVIGATION_FINISHED)
 
         if (restartAlert) {
@@ -1470,21 +1711,34 @@ class VietMapNavigationView(
 
     fun recenter() {
         isOverviewing = false
-        if (currentCenterPoint != null) {
-            context.currentActivity?.runOnUiThread {
-                moveCamera(
-                    LatLng(currentCenterPoint!!.latitude, currentCenterPoint!!.longitude),
-                    currentCenterPoint!!.bearing,
-                    zoomLevel = navigationZoomLevel
-                )
-            }
+        // Match the Flutter SDK exactly: ONLY hand the camera back to the LocationComponent in
+        // TRACKING_GPS, which smoothly animates to the puck (fed by forceLocationUpdate) and follows it.
+        // Do NOT also moveCamera()/animateCamera() here — that extra programmatic animation overlaps the
+        // setCameraMode transition and, during simulation, makes the location component reset its
+        // animation/engine state, restarting the ReplayRouteLocationEngine from the route origin.
+        context.currentActivity?.runOnUiThread {
+            vietMapGL.locationComponent.setCameraMode(
+                CameraMode.TRACKING_GPS,
+                1000L,
+                navigationZoomLevel,
+                null,
+                tilt,
+                null
+            )
         }
-
     }
 
     fun overViewRoute() {
         isOverviewing = true
-        routeProgress?.let { showRouteOverview(padding, it) }
+        // Must run on the UI thread: setting cameraMode triggers a LocationComponent camera transition
+        // whose reset calls getMetersPerPixelAtLatitude (a map API that asserts the UI thread), and the
+        // overview animateCamera touches the map too. Commands can arrive off the main thread.
+        context.currentActivity?.runOnUiThread {
+            // Release the tracking camera first; otherwise the per-tick forceLocationUpdate would snap
+            // the camera back to the puck and fight the overview animation. recenter() restores TRACKING_GPS.
+            vietMapGL.locationComponent.cameraMode = CameraMode.NONE
+            routeProgress?.let { showRouteOverview(padding, it) }
+        }
     }
 
     fun clearRoute() {
@@ -1646,5 +1900,36 @@ class VietMapNavigationView(
                 )
             }
         }
+    }
+}
+
+/**
+ * Simple 1D Kalman filter for GPS coordinate/bearing smoothing (ported from Flutter
+ * utilities/GpsKalmanFilter.kt). Reduces jitter in raw GPS so the off-route blend is smooth.
+ */
+private class GpsKalmanFilter(
+    private val q: Double = 0.00001, // process noise
+    private val r: Double = 0.0001   // measurement noise
+) {
+    private var p: Double = 1.0      // estimation error covariance
+    private var x: Double = 0.0      // estimated value
+    private var initialized: Boolean = false
+
+    fun update(measurement: Double): Double {
+        if (!initialized) {
+            x = measurement
+            initialized = true
+            return x
+        }
+        p += q
+        val k = p / (p + r)
+        x += k * (measurement - x)
+        p *= (1 - k)
+        return x
+    }
+
+    fun reset() {
+        initialized = false
+        p = 1.0
     }
 }

@@ -19,6 +19,7 @@ enum class VietMapEvents(val value: String) {
     SPEECH_ANNOUNCEMENT("speechAnnouncement"),
     BANNER_INSTRUCTION("bannerInstruction"),
     ON_ARRIVAL("onArrival"),
+    ON_WAYPOINT_ARRIVAL("onWaypointArrival"),
     FAILED_TO_REROUTE("failedToReroute"),
     REROUTE_ALONG("rerouteAlong"),
     ON_MAP_MOVE("onMapMove"),

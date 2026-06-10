@@ -1,6 +1,8 @@
 package vn.vietmap.vietmapnavigation
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReactContextBaseJavaModule
 import com.facebook.react.bridge.ReactMethod
@@ -115,6 +117,7 @@ class VietMapNavigationModule(reactContext: ReactApplicationContext) : ReactCont
         sendEvent(VietmapReactNativeEvent.OVERVIEW, null)
     }
 
+    @RequiresApi(Build.VERSION_CODES.Q)
     @ReactMethod
     fun startSpeedAlert() {
         VietMapNavigationView.instance?.startSpeedAlert()

@@ -84,6 +84,7 @@ export interface IVietMapNavigationProps {
   onMilestoneEvent?: (event: MilestoneData) => void;
   onUserOffRoute?: (event: LocationData) => void;
   onArrival?: (event: LocationData) => void;
+  onWaypointArrival?: (event: LocationData) => void;
   onNewRouteSelected?: (event: RouteData) => void;
   onMapClick?: (event: LocationData) => void;
 }

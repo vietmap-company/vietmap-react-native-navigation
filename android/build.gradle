@@ -108,6 +108,9 @@ dependencies {
   implementation "com.jakewharton:butterknife:10.2.3"
   implementation 'androidx.core:core-ktx:1.7.0'
   implementation 'com.github.vietmap-company:maps-sdk-android:4.1.0'
+  // MarkerView plugin: lets us host a real Android child view as a map marker that the
+  // plugin keeps positioned at a coordinate across camera moves (same dep gl-react-native uses).
+  implementation 'com.github.vietmap-company:vietmap-services-plugin-markerview:1.0.3'
   implementation 'com.github.vietmap-company:maps-sdk-navigation-ui-android:2.4.1'
   implementation 'com.github.vietmap-company:maps-sdk-navigation-android:2.6.0'
   implementation 'com.github.vietmap-company:vietmap-services-core:1.0.0'
