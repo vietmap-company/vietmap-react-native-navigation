@@ -5,10 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2026-06-05
+## [2.0.2] - 2026-06-11
 
 ### Added
-- **Custom Navigation Puck Image**: You can now replace the default user-location puck with your own image, controlled entirely from the React Native layer — no need to add any native assets.
+- **iOS New Architecture (Fabric) support**: The map now renders as a native Fabric component on iOS (`RCTVietMapNavigationComponentView`), matching the Android Fabric support shipped in 2.0.0. With the New Architecture enabled and React Native 0.76+, the component registers automatically.
+  > ⚠️ The New Architecture is now the **required and only supported** architecture.
+- **Custom map style URL** (`styleUrl?: string`): Point the tilemap at any VietMap style endpoint, including its own apikey query param. Use this when VietMap issued you **two keys** — one for the tilemap and one for navigation. When omitted, the SDK falls back to a light style built from `apiKey` (backward compatible).
+  ```tsx
+  <VietMapNavigation
+    styleUrl={'https://maps.vietmap.vn/api/maps/light/styles.json?apikey=YOUR_TILEMAP_KEY'}
+    apiKey={'YOUR_NAVIGATION_KEY'}
+  />
+  ```
+- **`VietMapMarkerView`**: Place any React Native view as a marker pinned to a geographic coordinate; the marker stays anchored as the camera moves. Supports `coordinate` (`[lng, lat]` tuple or `{ latitude, longitude }`), `anchor`, and a stable `id`. Available on both Android and iOS. (Display-only — markers do not receive tap events; see README §4.4.)
+  ```tsx
+  <VietMapMarkerView coordinate={[106.675913, 10.759156]} anchor={{ x: 0.5, y: 1 }}>
+    <Image source={require('./assets/location.png')} style={{ width: 28, height: 28 }} />
+  </VietMapMarkerView>
+  ```
+- **Custom puck location while navigating**: Added a native entry point to override/move the user-location puck position during an active navigation session.
+- **Custom Navigation Puck Image**: Replace the default user-location puck with your own image, controlled entirely from the React Native layer — no native assets needed.
   - New props on `<VietMapNavigation>`:
     - `puckImage?: string` — image URI for the puck.
     - `puckImageWidth?: number` / `puckImageHeight?: number` — render size (Android: dp, iOS: pt). Defaults to 50 when omitted.
@@ -25,14 +41,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
       // ... other props
     />
     ```
+- **New events**: `onMapClick`, `onWaypointArrival` (fires for each intermediate waypoint, distinct from the final `onArrival`), and `onNavigationCancelled` (fires right before `onNavigationFinished` when navigation is stopped mid-route).
+
+### Changed
+- **Navigation finish handling**: Reworked how guidance sessions end and which events fire, for clearer, deterministic lifecycle signalling:
+  - Stopped mid-route (`finishNavigation()`) → `onNavigationCancelled` → `onNavigationFinished`.
+  - Destination reached → `onArrival` → `onNavigationFinished`.
+  - Internal reroutes (off-route / faster-route refresh) no longer fire `onNavigationFinished`.
+- **`onCancelNavigation` deprecated**: Never emitted by either platform. Use `onNavigationCancelled` instead. Kept only so existing code keeps compiling.
 
 ### Behavior
 - If `puckImage` is omitted, the SDK's default navigation puck is used (unchanged behavior).
-- If the URI is invalid or the image fails to decode/download, the error is logged (tag `VietMapNavigation`) and the default puck is kept — navigation is never interrupted.
+- If the puck image URI is invalid or fails to decode/download, the error is logged (tag `VietMapNavigation`) and the default puck is kept — navigation is never interrupted.
 
 ### Native
-- **Android** (`VietMapNavigationView`): loads the bitmap off the main thread, scales/rotates it, registers it via `style.addImage(...)`, and applies it with `LocationComponentOptions.gpsName(...)`. Release builds resolve a `require()`d image by its bundled drawable resource name.
-- **iOS** (`VietMapNavigationView`): loads the image and sets it as `NavigationMapView.userCourseView`; rotation is applied via a wrapping container so heading rotation and the static offset compose correctly.
+- **iOS Fabric**: Added `RCTVietMapNavigationComponentView.{h,mm}` and Codegen wiring so the component works under the New Architecture; event emission routed through the Fabric event path.
+- **Puck image — Android** (`VietMapNavigationView`): loads the bitmap off the main thread, scales/rotates it, registers it via `style.addImage(...)`, and applies it with `LocationComponentOptions.gpsName(...)`. Release builds resolve a `require()`d image by its bundled drawable resource name.
+- **Puck image — iOS** (`VietMapNavigationView`): loads the image and sets it as `NavigationMapView.userCourseView`; rotation is applied via a wrapping container so heading rotation and the static offset compose correctly.
+- **Markers — Android**: `VietMapMarkerView`/`VietMapMarkerViewManager` reparent the marker into the map's view hierarchy so it stays positioned across camera moves. **iOS**: `VietMapMarkerView` + bridge keep markers anchored to their coordinate.
 
 ## [2.0.1] - 2026-06-02
 

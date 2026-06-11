@@ -44,19 +44,16 @@ You need these three things. If any item is missing, the SDK will not work:
 
 ## 2. Architecture compatibility — read this first
 
-React Native apps run on one of two internal "architectures". You don't need to understand them — you only need to know **which one your app uses**, because it affects how this SDK runs:
+> ⚠️ **This SDK requires React Native's New Architecture.** Please enable it before integrating. The Old Architecture is no longer supported.
+
+React Native apps run on one of two internal "architectures". You don't need to understand them — you only need to make sure your app uses the **New Architecture**, because this SDK is built and tested only against it:
 
 | Your app | Supported? | Notes |
 |---|---|---|
-| **New Architecture** (the default for every app created with React Native **0.76 or newer**) | ✅ **Yes — recommended.** | This SDK is built and tested against the New Architecture. The map renders as a native Fabric component on both Android and iOS. |
-| **Old Architecture** (apps that explicitly turned the New Architecture off, or apps on RN 0.72–0.75 that never enabled it) | ✅ Yes | Works through React Native's legacy bridge (the classic view managers are still shipped in this package). If you hit an issue on the Old Architecture, [report it](https://github.com/vietmap-company/vietmap-react-native-navigation/issues) — but we recommend upgrading to the New Architecture, which is where active testing happens. |
+| **New Architecture** (the default for every app created with React Native **0.76 or newer**) | ✅ **Yes — required.** | This SDK is built and tested against the New Architecture. The map renders as a native Fabric component on both Android and iOS. |
+| **Old Architecture** (apps that explicitly turned the New Architecture off, or apps on RN 0.72–0.75 that never enabled it) | ❌ **No — not supported.** | The Old Architecture still contains many known issues and is **not supported**. Please enable the New Architecture (see below) before using this SDK. We do not accept Old Architecture bug reports. |
 
-**How do I know which architecture my app uses?**
-
-- **Android**: open `android/gradle.properties` and look for the line `newArchEnabled`. `true` = New Architecture, `false` = Old. If your app was created with RN 0.76+, it is `true` by default.
-- **iOS**: the New Architecture is on by default from RN 0.76. It is only off if someone in your team deliberately disabled it (e.g. installed pods with `RCT_NEW_ARCH_ENABLED=0`).
-
-> **One iOS-specific note:** on the New Architecture, automatic registration of the map component requires **React Native 0.76 or newer**. On RN 0.72–0.75 with the New Architecture enabled, the SDK falls back to React Native's built-in interop layer — it still works, no action needed from you.
+> **iOS note:** automatic registration of the map component requires **React Native 0.76 or newer** with the New Architecture enabled.
 
 ## 3. Setup 
 
