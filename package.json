@@ -6,6 +6,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "source": "src/index",
+  "react-native": "src/index",
   "publishConfig": {
     "access": "public"
   },
@@ -41,6 +42,11 @@
     "jsSrcsDir": "src",
     "android": {
       "javaPackageName": "vn.vietmap.vietmapnavigation"
+    },
+    "ios": {
+      "componentProvider": {
+        "VietMapNavigation": "RCTVietMapNavigationComponentView"
+      }
     }
   },
   "peerDependencies": {

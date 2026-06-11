@@ -18,6 +18,7 @@ import VietMapNavigation, {
 import {VietMapNavigationController, VietMapMarkerView} from '../../src';
 import React, {useEffect, useRef, useState} from 'react';
 import Geolocation from '@react-native-community/geolocation';
+import {NativeModules} from 'react-native';
 
 import {Icon} from 'react-native-elements';
 import Images from './img/index';
@@ -461,7 +462,9 @@ const VietMapNavigationScreen = () => {
           styleUrl={
             'https://maps.vietmap.vn/maps/styles/dm/style.json?apikey=TILEMAP_API_KEY_HERE'
           }
-          puckImage={Image.resolveAssetSource(require('./img/navigation.png')).uri}
+          puckImage={
+            Image.resolveAssetSource(require('./img/navigation.png')).uri
+          }
           puckImageWidth={60}
           puckImageHeight={60}
           puckImageRotation={0}
@@ -490,22 +493,8 @@ const VietMapNavigationScreen = () => {
               }
             }
           }}
-          onMapMove={() => {
-            setIsOverview(true);
-          }}
-          onMilestoneEvent={event => {}}
-          onNavigationRunning={() => {
-            setIsNavigationInprogress(true);
-          }}
-          onArrival={event => {}}
           onRouteBuilt={event => {
             setRouteData(event);
-          }}
-          onMapClick={event => {
-            const {latitude, longitude} = event.nativeEvent.data;
-            const id = `marker-${markerIdRef.current++}`;
-            console.log('Map clicked at', event.nativeEvent.data);
-            setMarkers(prev => [...prev, {id, lat: latitude, lng: longitude}]);
           }}
           onMapLongClick={async event => {
             VietMapNavigationController.buildRoute(
@@ -522,8 +511,57 @@ const VietMapNavigationScreen = () => {
               'motorcycle',
             );
           }}
-          onCancelNavigation={() => {
+          onMapMove={() => {
+            console.log('Map moved');
+            setIsOverview(true);
+          }}
+          onMapMoveEnd={() => {
+            console.log('Map move ended');
+          }}
+          onMilestoneEvent={event => {
+            console.log('onMilestoneEvent', event?.nativeEvent?.data);
+          }}
+          onNavigationRunning={() => {
+            console.log('onNavigationRunning');
+            setIsNavigationInprogress(true);
+          }}
+          onArrival={event => {
+            console.log('onArrival', event?.nativeEvent?.data);
+          }}
+          onNavigationFinished={() => {
+            console.log('onNavigationFinished');
+          }}
+          onNavigationCancelled={() => {
+            console.log('onNavigationCancelled');
             setIsNavigationInprogress(false);
+          }}
+          onRouteBuilding={() => {
+            console.log('onRouteBuilding');
+          }}
+          onRouteBuildFailed={() => {
+            console.log('onRouteBuildFailed');
+          }}
+          onMapReady={() => {
+            console.log('onMapReady');
+          }}
+          onUserOffRoute={event => {
+            console.log('onUserOffRoute', event?.nativeEvent?.data);
+          }}
+          onWaypointArrival={event => {
+            console.log('onWaypointArrival', event?.nativeEvent?.data);
+          }}
+          onNewRouteSelected={event => {
+            console.log('onNewRouteSelected', event?.nativeEvent?.data);
+          }}
+          onMapClick={event => {
+            const {latitude, longitude} = event.nativeEvent.data;
+            const id = `marker-${markerIdRef.current++}`;
+            const isNewArchitecture = NativeModules.UIManager;
+            console.log('New architecture:', isNewArchitecture);
+            const isNewArch = (global as any)?.nativeFabricUIManager != null;
+            console.log('New Architecture:', isNewArch ? 'ON' : 'OFF');
+            console.log('Map clicked at', event.nativeEvent.data);
+            setMarkers(prev => [...prev, {id, lat: latitude, lng: longitude}]);
           }}
         />
         {markers.map((m, index) => (

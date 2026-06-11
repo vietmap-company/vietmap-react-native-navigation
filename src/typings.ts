@@ -69,13 +69,28 @@ export interface IVietMapNavigationProps {
   navigationPadding?: NavigationPadding;
   /// This is React component style, not a native style
   style?: object; 
-  onRouteProgressChange?: (event: NavigationProgressData) => void; 
+  onRouteProgressChange?: (event: NavigationProgressData) => void;
+  /**
+   * @deprecated Never emitted by either platform. Use {@link IVietMapNavigationProps.onNavigationCancelled}
+   * instead, which fires when an in-progress navigation is stopped before reaching the destination.
+   */
   onCancelNavigation?: () => void;
   onRouteBuilt?: (event: RouteData) => void;
   onMapLongClick?: (event: LocationData) => void;
   onMapMove?: () => void;
   onMapMoveEnd?: () => void;
+  /**
+   * Fires whenever the guidance session ends, for any reason:
+   * - stopped mid-route by the user/app → preceded by `onNavigationCancelled`
+   * - destination reached → preceded by `onArrival`
+   * Internal reroutes (off-route or faster-route refresh) do NOT fire this.
+   */
   onNavigationFinished?: () => void;
+  /**
+   * Fires right before `onNavigationFinished` when navigation is stopped BEFORE reaching the
+   * destination (user/app called `finishNavigation()` mid-route). Not fired on arrival, nor on
+   * internal reroutes.
+   */
   onNavigationCancelled?: () => void;
   onNavigationRunning?: () => void;
   onRouteBuildFailed?: () => void;

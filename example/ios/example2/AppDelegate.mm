@@ -1,12 +1,17 @@
 #import "AppDelegate.h"
 
 #import <React/RCTBundleURLProvider.h>
+#import <ReactAppDependencyProvider/RCTAppDependencyProvider.h>
 
 @implementation AppDelegate
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
   self.moduleName = @"example2";
+  // Required since RN 0.85: supplies the core TurboModules (PlatformConstants, ...) and
+  // third-party Fabric components to the React runtime. Without it the runtime fails to
+  // initialize ("'PlatformConstants' could not be found").
+  self.dependencyProvider = [RCTAppDependencyProvider new];
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};

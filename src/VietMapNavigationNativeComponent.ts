@@ -13,7 +13,13 @@ type Padding = Readonly<{
   bottom: Double;
 }>;
 
-type GenericEvent = Readonly<{}>;
+// Event payload contract:
+// - iOS Fabric (New Architecture): the native component view serializes the full event payload
+//   to a JSON string in `json`; the JS wrapper in index.tsx parses it back, so apps keep
+//   receiving the same `event.nativeEvent.data` shape as before.
+// - Android and iOS Paper/interop: events bypass the codegen C++ emitters and deliver the rich
+//   dictionary payload directly (no `json` field) — hence it is optional.
+type GenericEvent = Readonly<{ json?: string }>;
 
 export interface NativeProps extends ViewProps {
   apiKey: string;

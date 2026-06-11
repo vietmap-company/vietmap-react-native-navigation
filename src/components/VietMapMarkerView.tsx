@@ -20,7 +20,10 @@ interface NativeMarkerProps extends ViewProps {
   /** [longitude, latitude] */
   coordinate: number[];
   anchor?: { x: number; y: number };
-  children: ReactElement;
+  // Children reach the native side as subviews, not as a prop; keep this optional so tsc does
+  // not demand a `children` attribute on the host component JSX (public API still requires it
+  // via VietMapMarkerViewProps).
+  children?: React.ReactNode;
 }
 
 const NativeMarkerView =

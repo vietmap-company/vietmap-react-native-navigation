@@ -30,6 +30,11 @@ extension UIView {
     }
 }
 
+// @objc(VietMapNavigationView): pins the ObjC runtime/linker name (instead of the mangled
+// Swift name) so the Fabric component view (RCTVietMapNavigationComponentView.mm) can link
+// against this class through a mirror @interface — the same mechanism RCT_EXTERN_MODULE
+// already relies on for the Paper manager/module classes. Name only — no behavior change.
+@objc(VietMapNavigationView)
 @objcMembers class VietMapNavigationView: UIView, NavigationViewControllerDelegate, MLNMapViewDelegate {
     static var shared = VietMapNavigationView()
     var navigationMapView: NavigationMapView? {
@@ -107,6 +112,7 @@ extension UIView {
     @objc var onRouteProgressChange: RCTDirectEventBlock?
     @objc var onError: RCTDirectEventBlock?
     @objc var onNavigationFinished: RCTDirectEventBlock?
+    @objc var onNavigationCancelled: RCTDirectEventBlock?
     @objc var onArrival: RCTDirectEventBlock?
     @objc var onUserOffRoute: RCTDirectEventBlock?
     @objc var onRouteBuilt: RCTDirectEventBlock?
@@ -121,7 +127,10 @@ extension UIView {
 
     private var trackingSDK: VietmapTrackingManager?
     var restartAlert: Bool = false
-    
+    // True once the FINAL waypoint is reached; distinguishes a finish-after-arrival (completion)
+    // from a finish mid-route (user/app cancellation) when emitting onNavigationCancelled.
+    private var hasArrivedAtFinalDestination: Bool = false
+
     // Vehicle configuration properties
     private var vehicleType: Int = 1  // Default vehicle type
     private var seats: Int = 4        // Default seats
@@ -170,6 +179,7 @@ extension UIView {
         routeController?.reroutesProactively = true
         routeController?.resume()
         isNavigating = true
+        hasArrivedAtFinalDestination = false
         // Enable course tracking so the first GPS tick snaps both puck and camera to the route.
         // We drive the camera ourselves per-tick (see progressDidChange) instead of recenterMap(),
         // which lives in the RouteMapViewController we bypass and doesn't move our viewport.
@@ -206,6 +216,12 @@ extension UIView {
             isNavigating = false
             routeController = nil
             suspendNotifications()
+            // A finish while the destination was never reached is a user/app cancellation
+            // (arrival does not tear the session down on iOS). Cancelled precedes finished,
+            // mirroring Android's finishNavigation().
+            if (!hasArrivedAtFinalDestination) {
+                sendEvent(event: onNavigationCancelled)
+            }
             sendEvent(event: onNavigationFinished)
             if (restartAlert) {
                 // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại
@@ -794,6 +810,7 @@ extension VietMapNavigationView: RouteControllerDelegate {
         }
         if(_remainingPointCount == 1)
         {
+            hasArrivedAtFinalDestination = true
             suspendNotifications()
         }
         else
@@ -808,6 +825,7 @@ extension VietMapNavigationView: RouteControllerDelegate {
         if (canceled)
         {
             UIApplication.shared.isIdleTimerDisabled = false
+            sendEvent(event: onNavigationCancelled)
             sendEvent(event: onNavigationFinished)
             if (restartAlert) {
                 // Nếu trước đó có cảnh báo tốc độ đang hoạt động thì restart lại

@@ -42,10 +42,11 @@ Pod::Spec.new do |s|
   s.platforms    = { :ios => "13.4" }
   s.source       = { :git => "https://github.com/vietmap-company/vietmap-react-native-navigation.git", :tag => "#{s.version}" }
 
-  s.source_files = "ios/**/*.{h,m,swift}"
+  # .mm files host the Fabric (New Architecture) component view; they compile to nothing
+  # when RCT_NEW_ARCH_ENABLED is not set, so old-arch apps are unaffected.
+  s.source_files = "ios/**/*.{h,m,mm,swift}"
   s.requires_arc = true
 
-  s.dependency "React-Core"
   s.dependency 'VietMapNavigation', '3.3.0'
   s.dependency 'VietMapCoreNavigation', '3.1.0'
   s.dependency 'VietmapTrackingSDK', '1.2.2'
@@ -56,5 +57,14 @@ Pod::Spec.new do |s|
     'CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES',
     'ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES' => 'YES'
   }
+
+  # New Architecture: pulls React-RCTFabric/ReactCodegen/folly etc. and sets the
+  # RCT_NEW_ARCH_ENABLED flag when the app enables it. Falls back to React-Core
+  # for RN versions that don't ship the helper.
+  if respond_to?(:install_modules_dependencies, true)
+    install_modules_dependencies(s)
+  else
+    s.dependency "React-Core"
+  end
 end
 

@@ -1098,8 +1098,15 @@ class VietMapNavigationView(
         }
     }
 
-    fun finishNavigation(isOffRouted: Boolean = false) {
+    fun finishNavigation(
+        isOffRouted: Boolean = false,
+        emitFinishedEvent: Boolean = true,
+        isArrival: Boolean = false,
+    ) {
         context.currentActivity?.runOnUiThread {
+            // Captured before the teardown below clears it: a session that was still guiding when
+            // a non-arrival finish comes in counts as a user/app cancellation.
+            val wasNavigating = isNavigationInProgress
 
 //            navigationZoomLevel = mapZoomLevel
             bearing = 0.0
@@ -1119,6 +1126,20 @@ class VietMapNavigationView(
                 overViewRoute()
                 // Real finish (not a reroute): the next session starts waypoint counting fresh.
                 completedWaypointIndex = 0
+                // Parity with iOS, which emits onNavigationFinished from its own stop path. The
+                // NavigationListener.onNavigationFinished/onCancelNavigation overrides below never
+                // run: that ui.v5 drop-in listener is never registered (we only
+                // addNavigationEventListener), so this is the only place Android can report a real
+                // session end. Suppressed for internal restarts (refreshNavigation) via
+                // emitFinishedEvent=false.
+                if (emitFinishedEvent) {
+                    if (wasNavigating && !isArrival) {
+                        // Guidance was still in progress and we did not reach the destination —
+                        // a user/app stop is a cancellation. Always followed by FINISHED.
+                        sendEvent(VietMapEvents.NAVIGATION_CANCELLED)
+                    }
+                    sendEvent(VietMapEvents.NAVIGATION_FINISHED)
+                }
             }
 
             if (currentRoute != null) {
@@ -1487,7 +1508,8 @@ class VietMapNavigationView(
                 if (listNavigationRemainingPoints.isNotEmpty()) {
                     listNavigationRemainingPoints.removeAt(0)
                 }
-                finishNavigation()
+                // Destination reached: this auto-stop is a completion, not a cancellation.
+                finishNavigation(isArrival = true)
             } else {
                 completedWaypointIndex++
                 if (listNavigationRemainingPoints.isNotEmpty()) {
@@ -1614,7 +1636,9 @@ class VietMapNavigationView(
             if (shouldCancel) {
 
                 currentRoute = directionsRoute
-                finishNavigation()
+                // Internal stop+restart for a route refresh — not a real session end, so don't
+                // emit onNavigationFinished to JS.
+                finishNavigation(emitFinishedEvent = false)
                 startNavigation()
             }
         }

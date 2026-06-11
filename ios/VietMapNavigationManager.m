@@ -5,6 +5,7 @@
 RCT_EXPORT_VIEW_PROPERTY(onRouteProgressChange, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onError, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onNavigationFinished, RCTDirectEventBlock)
+RCT_EXPORT_VIEW_PROPERTY(onNavigationCancelled, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onArrival, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onUserOffRoute, RCTDirectEventBlock)
 RCT_EXPORT_VIEW_PROPERTY(onRouteBuilt, RCTDirectEventBlock)
