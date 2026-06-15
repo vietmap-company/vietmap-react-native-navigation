@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [2.0.2] - 2026-06-11
+## [3.0.0] - 2026-06-15
 
 ### Added
 - **iOS New Architecture (Fabric) support**: The map now renders as a native Fabric component on iOS (`RCTVietMapNavigationComponentView`), matching the Android Fabric support shipped in 2.0.0. With the New Architecture enabled and React Native 0.76+, the component registers automatically.
